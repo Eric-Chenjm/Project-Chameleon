@@ -19,9 +19,11 @@ def main():
         install_dir = os.path.expandvars(r"%LOCALAPPDATA%\Programs\Antigravity")
         resources_dir = os.path.join(install_dir, "resources")
         npx_cmd = "npx.cmd"
+        appdata_dir = os.path.join(os.environ.get("APPDATA", ""), "Antigravity")
     elif system_name == "Darwin":
         resources_dir = "/Applications/Antigravity.app/Contents/Resources"
         npx_cmd = "npx"
+        appdata_dir = os.path.expanduser("~/Library/Application Support/Antigravity")
     else:
         print(f"[-] 不支持的操作系统: {system_name}")
         sys.exit(1)
@@ -75,6 +77,16 @@ def main():
         os.makedirs(os.path.dirname(cs_dst), exist_ok=True)
         shutil.copy2(cs_src, cs_dst)
         log("注入 customScheme 拦截器成功，AI 界面汉化已激活！")
+        
+    log("3.5 部署核心 UI 变色龙预编译产物 ...")
+    ui_bundle_src = os.path.join(trans_dir, "zh_cn_ui_main.js")
+    if os.path.exists(ui_bundle_src):
+        os.makedirs(appdata_dir, exist_ok=True)
+        ui_bundle_dst = os.path.join(appdata_dir, "zh_cn_ui_main.js")
+        shutil.copy2(ui_bundle_src, ui_bundle_dst)
+        log(f"UI 变色龙引擎成功注入至系统缓存: {appdata_dir}")
+    else:
+        log("警告：未找到预编译的 zh_cn_ui_main.js，可能导致界面白屏！")
         
     log("4. 重新封包 app.asar ...")
     tmp_asar = asar_path + ".tmp"
