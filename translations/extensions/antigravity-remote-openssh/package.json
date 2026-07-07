@@ -1,0 +1,311 @@
+{
+  "name": "反重力远程openssh",
+  "displayName": "反重力远程 - SSH",
+  "description": "使用 Antigravity 通过 SSH 连接到远程计算机",
+  "version": "0.0.1",
+  "publisher": "google",
+  "license": "MIT",
+  "enabledApiProposals": [
+    "resolvers",
+    "contribViewsRemote"
+  ],
+  "private": true,
+  "engines": {
+    "vscode": "^1.25.0"
+  },
+  "extensionKind": [
+    "ui"
+  ],
+  "activationEvents": [
+    "onResolveRemoteAuthority:ssh-remote",
+    "onCommand:antigravity-remote-openssh.newWindow",
+    "onCommand:antigravity-remote-openssh.currentWindow",
+    "onCommand:antigravity-remote-openssh.showLog",
+    "onView:antigravitySSHHosts"
+  ],
+  "main": "./dist/extension",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "configuration": {
+      "title": "反重力远程 - SSH",
+      "properties": {
+        "remote.antigravitySSH.configFile": {
+          "type": "string",
+          "description": "自定义 SSH 配置文件的绝对文件路径。",
+          "default": "",
+          "scope": "application"
+        },
+        "remote.antigravitySSH.path": {
+          "type": "string",
+          "description": "SSH 可执行文件的绝对文件路径。如果为空，将使用 PATH 上的 ssh。",
+          "default": "",
+          "scope": "application"
+        },
+        "remote.antigravitySSH.experimental.serverDownloadUrlTemplate": {
+          "type": "string",
+          "description": "实验性：反重力服务器下载的 URL。可以替换以下变量：${os}、${arch}、${ideVersion}、${vscodeVersion}、${commit}、${quality}。",
+          "scope": "application",
+          "default": "https://antigravity-stable.codeiumdata.com/${os}-reh-${arch}/${quality}/${commit}/antigravity-reh-${os}-${arch}-${ideVersion}.tar.gz"
+        },
+        "remote.antigravitySSH.experimental.serverBinaryName": {
+          "type": "string",
+          "description": "实验性：服务器二进制文件的名称，如果您使用的客户端没有相应的服务器版本，或者您正在迭代远程扩展，请使用此名称。",
+          "scope": "application",
+          "default": ""
+        },
+        "remote.antigravitySSH.experimental.disableServerChecksum": {
+          "type": "boolean",
+          "description": "实验：禁用服务器校验和验证。仅建议用于开发和测试。",
+          "scope": "application",
+          "default": false
+        }
+      }
+    },
+    "resourceLabelFormatters": [
+      {
+        "scheme": "vscode-remote",
+        "authority": "ssh-remote+*",
+        "formatting": {
+          "label": "${路径}",
+          "separator": "/",
+          "tildify": true,
+          "workspaceSuffix": "SSH",
+          "workspaceTooltip": "SSH to a Remote Host"
+        }
+      }
+    ],
+    "views": {
+      "remote": [
+        {
+          "id": "antigravitySSHHosts",
+          "name": "SSH（反重力）",
+          "group": "targets@1",
+          "remoteName": "ssh-remote"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "title": "关闭 SSH 进程",
+        "category": "Remote-SSH",
+        "command": "antigravity-remote-openssh.closeSSHProcess"
+      },
+      {
+        "title": "连接到 SSH 主机...",
+        "category": "Remote-SSH",
+        "command": "antigravity-remote-openssh.newWindow"
+      },
+      {
+        "title": "在当前窗口中连接到 SSH 主机...",
+        "category": "Remote-SSH",
+        "command": "antigravity-remote-openssh.currentWindow"
+      },
+      {
+        "title": "显示 SSH 日志...",
+        "category": "Remote-SSH",
+        "command": "antigravity-remote-openssh.showLog"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.emptyWindowInNewWindow",
+        "title": "在新窗口中连接到 SSH 主机",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.emptyWindowInCurrentWindow",
+        "title": "在当前窗口中连接到 SSH 主机",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.reopenFolderInCurrentWindow",
+        "title": "在当前窗口中的 SSH 主机上打开",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.reopenFolderInNewWindow",
+        "title": "在新窗口中的 SSH 主机上打开",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.deleteFolderHistoryItem",
+        "title": "从列表中删除",
+        "icon": "$(x)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.refresh",
+        "title": "刷新",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.configure",
+        "title": "配置",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "antigravity-remote-openssh.explorer.add",
+        "title": "添加新内容",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "antigravity-remote-openssh.addCloudtopUrl",
+        "title": "添加云顶 URL",
+        "icon": "$(plus)"
+      }
+    ],
+    "menus": {
+      "statusBar/remoteIndicator": [
+        {
+          "command": "antigravity-remote-openssh.newWindow",
+          "when": "remoteName =~ /^ssh-remote$/ && remoteConnectionState == connected",
+          "group": "remote_10_openssh_1general@1"
+        },
+        {
+          "command": "antigravity-remote-openssh.currentWindow",
+          "when": "remoteName =~ /^ssh-remote$/ && remoteConnectionState == connected",
+          "group": "remote_10_openssh_1general@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.showLog",
+          "when": "remoteName =~ /^ssh-remote$/ && remoteConnectionState == connected",
+          "group": "remote_10_openssh_1general@4"
+        },
+        {
+          "command": "antigravity-remote-openssh.newWindow",
+          "when": "remoteConnectionState == disconnected",
+          "group": "remote_10_openssh_3local@1"
+        },
+        {
+          "command": "antigravity-remote-openssh.currentWindow",
+          "when": "remoteConnectionState == disconnected",
+          "group": "remote_10_openssh_3local@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.newWindow",
+          "when": "!remoteName && !virtualWorkspace",
+          "group": "remote_10_openssh_3local@5"
+        },
+        {
+          "command": "antigravity-remote-openssh.currentWindow",
+          "when": "!remoteName && !virtualWorkspace",
+          "group": "remote_10_openssh_3local@6"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "antigravity-remote-openssh.explorer.refresh",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.configure",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.add",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.emptyWindowInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.emptyWindowInCurrentWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.reopenFolderInCurrentWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.reopenFolderInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.deleteFolderHistoryItem",
+          "when": "false"
+        },
+        {
+          "command": "antigravity-remote-openssh.addCloudtopUrl",
+          "when": "antigravity.isGoogleInternal"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "antigravity-remote-openssh.explorer.add",
+          "when": "view == antigravitySSHHosts",
+          "group": "navigation"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.configure",
+          "when": "view == antigravitySSHHosts",
+          "group": "navigation"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.refresh",
+          "when": "view == antigravitySSHHosts",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "antigravity-remote-openssh.explorer.emptyWindowInCurrentWindow",
+          "when": "viewItem =~ /^antigravity-remote-openssh.explorer.host$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.emptyWindowInNewWindow",
+          "when": "viewItem =~ /^antigravity-remote-openssh.explorer.host$/",
+          "group": "inline@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.deleteFolderHistoryItem",
+          "when": "viewItem =~ /^antigravity-remote-openssh.explorer.folder/",
+          "group": "inline@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.emptyWindowInCurrentWindow",
+          "when": "viewItem =~ /^antigravity-remote-openssh.explorer.host$/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.emptyWindowInNewWindow",
+          "when": "viewItem =~ /^antigravity-remote-openssh.explorer.host$/",
+          "group": "navigation@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.reopenFolderInCurrentWindow",
+          "when": "viewItem == antigravity-remote-openssh.explorer.folder",
+          "group": "inline@1"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.reopenFolderInNewWindow",
+          "when": "viewItem == antigravity-remote-openssh.explorer.folder",
+          "group": "inline@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.reopenFolderInCurrentWindow",
+          "when": "viewItem == antigravity-remote-openssh.explorer.folder",
+          "group": "navigation@1"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.reopenFolderInNewWindow",
+          "when": "viewItem == antigravity-remote-openssh.explorer.folder",
+          "group": "navigation@2"
+        },
+        {
+          "command": "antigravity-remote-openssh.explorer.deleteFolderHistoryItem",
+          "when": "viewItem =~ /^antigravity-remote-openssh.explorer.folder/",
+          "group": "navigation@3"
+        }
+      ]
+    }
+  },
+  "prettier": {
+    "singleQuote": true,
+    "useTabs": true,
+    "tabWidth": 4
+  }
+}

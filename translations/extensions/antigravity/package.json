@@ -1,0 +1,344 @@
+{
+  "name": "反重力",
+  "displayName": "反重力",
+  "description": "为反重力中的许多人工智能功能提供支持的扩展。",
+  "version": "0.2.0",
+  "publisher": "google",
+  "engines": {
+    "vscode": "^1.68.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "*"
+  ],
+  "enabledApiProposals": [
+    "contribSourceControlInputBoxMenu",
+    "inlineCompletionsAdditions",
+    "antigravityUnifiedStateSync"
+  ],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "antigravity.workflowEditor",
+        "displayName": "工作流程编辑器",
+        "selector": [
+          {
+            "filenamePattern": "**/.agent/workflows/**/*.md"
+          },
+          {
+            "filenamePattern": "**/_agent/workflows/**/*.md"
+          },
+          {
+            "filenamePattern": "**/.agents/workflows/**/*.md"
+          },
+          {
+            "filenamePattern": "**/_agents/workflows/**/*.md"
+          },
+          {
+            "filenamePattern": "**/.gemini/jetski*/global_workflows/*.md"
+          },
+          {
+            "filenamePattern": "**/.gemini/antigravity*/global_workflows/*.md"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "antigravity.ruleEditor",
+        "displayName": "规则编辑器",
+        "selector": [
+          {
+            "filenamePattern": "**/.agent/rules/**/*.md"
+          },
+          {
+            "filenamePattern": "**/_agent/rules/**/*.md"
+          },
+          {
+            "filenamePattern": "**/.agents/rules/**/*.md"
+          },
+          {
+            "filenamePattern": "**/_agents/rules/**/*.md"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "authentication": [
+      {
+        "id": "antigravity_auth",
+        "label": "反重力"
+      }
+    ],
+    "commands": [
+      {
+        "command": "antigravity.login",
+        "title": "登录IDE"
+      },
+      {
+        "command": "antigravity.loginWithAuthToken",
+        "title": "提供身份验证令牌（备份登录）"
+      },
+      {
+        "command": "antigravity.importVSCodeSettings",
+        "title": "导入 VS Code 设置"
+      },
+      {
+        "command": "antigravity.importVSCodeExtensions",
+        "title": "导入 VS Code 扩展"
+      },
+      {
+        "command": "antigravity.importVSCodeRecentWorkspaces",
+        "title": "导入 VS Code 最近的工作区"
+      },
+      {
+        "command": "antigravity.importCursorSettings",
+        "title": "导入光标设置"
+      },
+      {
+        "command": "antigravity.importCursorExtensions",
+        "title": "导入游标扩展"
+      },
+      {
+        "command": "antigravity.importWindsurfSettings",
+        "title": "导入风帆设置"
+      },
+      {
+        "command": "antigravity.importWindsurfExtensions",
+        "title": "导入 Windsurf 扩展"
+      },
+      {
+        "command": "antigravity.generateCommitMessage",
+        "title": "生成提交消息",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "antigravity.restartLanguageServer",
+        "title": "重新启动语言服务器"
+      },
+      {
+        "command": "antigravity.killLanguageServerAndReloadWindow",
+        "title": "终止语言服务器并重新加载窗口"
+      },
+      {
+        "command": "antigravity.togglePersistentLanguageServer",
+        "title": "切换持久语言服务器和重新加载窗口"
+      },
+      {
+        "command": "antigravity.openPersistentLanguageServerLog",
+        "title": "打开持久语言服务器日志"
+      },
+      {
+        "command": "antigravity.copyApiKey",
+        "title": "将 API 密钥复制到剪贴板"
+      },
+      {
+        "command": "antigravity.openChangeLog",
+        "title": "打开变更日志"
+      },
+      {
+        "command": "antigravity.openBrowser",
+        "title": "打开浏览器"
+      },
+      {
+        "command": "antigravity.showBrowserAllowlist",
+        "title": "显示浏览器白名单"
+      },
+      {
+        "command": "antigravity.killRemoteExtensionHost",
+        "title": "杀死远程服务器上的扩展主机"
+      },
+      {
+        "command": "antigravity.importCiderSettings",
+        "title": "导入苹果酒设置"
+      },
+      {
+        "command": "antigravity.startDemoMode",
+        "title": "[测试版] 启动演示模式"
+      },
+      {
+        "command": "antigravity.endDemoMode",
+        "title": "[Beta] 结束演示模式"
+      }
+    ],
+    "configuration": {
+      "title": "反重力编辑器",
+      "properties": {
+        "antigravity.marketplaceExtensionGalleryServiceURL": {
+          "type": "string",
+          "default": "https://open-vsx.org/vscode/gallery",
+          "markdownDescription": "更改市场搜索结果的基本 URL。 [可用选项](https://github.com/VSCodium/vscodium/blob/master/docs/index.md#extensions-marketplace)。更改此值后，您必须重新启动 Antigravity 才能使用新市场。"
+        },
+        "antigravity.marketplaceGalleryItemURL": {
+          "type": "string",
+          "default": "https://open-vsx.org/vscode/item",
+          "markdownDescription": "更改每个扩展页面上的基本 URL。 [可用选项](https://github.com/VSCodium/vscodium/blob/master/docs/index.md#extensions-marketplace)。更改此值后，您必须重新启动 Antigravity 才能使用新市场。"
+        },
+        "antigravity.searchMaxWorkspaceFileCount": {
+          "type": "integer",
+          "default": 5000,
+          "description": "Jetski 将尝试计算工作空间中最多这么多文件的嵌入。此文件计数忽略 .gitignore 和二进制文件。提高此限制的默认值可能会导致性能问题。 0 或以下的值将被视为无限制。"
+        },
+        "antigravity.enableCursorImportCursor": {
+          "type": "boolean",
+          "default": false,
+          "description": "在调色板中启用光标导入命令"
+        },
+        "antigravity.persistentLanguageServer": {
+          "type": "boolean",
+          "default": false,
+          "description": "编辑器关闭后保持语言服务器运行。"
+        }
+      }
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "antigravity.killRemoteExtensionHost",
+          "when": "isInsiders || isDevelopment"
+        },
+        {
+          "command": "antigravity.importAntigravitySettings",
+          "when": "!antigravity.isGoogleInternal",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importAntigravityExtensions",
+          "when": "!antigravity.isGoogleInternal",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.openBrowser",
+          "when": "false"
+        },
+        {
+          "command": "antigravity.showBrowserAllowlist"
+        },
+        {
+          "command": "antigravity.importCursorSettings",
+          "when": "!antigravity.isGoogleInternal && antigravity:enableCursorImportCursor",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importCursorExtensions",
+          "when": "!antigravity.isGoogleInternal && antigravity:enableCursorImportCursor",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importWindsurfSettings",
+          "when": "!antigravity.isGoogleInternal && antigravity:enableWindsurfImport",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importWindsurfExtensions",
+          "when": "!antigravity.isGoogleInternal && antigravity:enableWindsurfImport",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importVSCodeSettings",
+          "when": "antigravity:enableVSCodeImport",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importVSCodeExtensions",
+          "when": "antigravity:enableVSCodeImport",
+          "group": "2_import"
+        },
+        {
+          "command": "antigravity.importCiderSettings",
+          "group": "2_import",
+          "when": "antigravity.isGoogleInternal && !remoteName"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "antigravity.prioritized.chat.open",
+          "group": "CodeiumGroup@1",
+          "when": "editorTextFocus && editorHasSelection"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "antigravity.prioritized.agentFocusNextHunk",
+        "key": "alt+j",
+        "mac": "alt+j",
+        "when": "editorTextFocus && antigravity.canAcceptOrRejectAllAgentEditsInFile"
+      },
+      {
+        "command": "antigravity.prioritized.agentFocusPreviousHunk",
+        "key": "alt+k",
+        "mac": "alt+k",
+        "when": "editorTextFocus && antigravity.canAcceptOrRejectAllAgentEditsInFile"
+      },
+      {
+        "command": "antigravity.prioritized.agentAcceptFocusedHunk",
+        "key": "alt+enter",
+        "mac": "alt+enter",
+        "when": "editorTextFocus && antigravity.canAcceptOrRejectFocusedHunk"
+      },
+      {
+        "command": "antigravity.prioritized.agentRejectFocusedHunk",
+        "key": "alt+shift+backspace",
+        "mac": "alt+shift+backspace",
+        "when": "editorTextFocus && antigravity.canAcceptOrRejectFocusedHunk"
+      },
+      {
+        "command": "editor.action.inlineSuggest.trigger",
+        "key": "alt+\\",
+        "when": "editorTextFocus && !editorHasSelection && !inlineSuggestionsVisible"
+      },
+      {
+        "command": "antigravity.prioritized.supercompleteAccept",
+        "key": "tab",
+        "mac": "tab",
+        "when": "editorTextFocus && ((inlineSuggestionVisible && (inlineSuggestionHasIndentationLessThanTabSize || (vim.active && vim.mode == 'Normal') || (neovim.init && neovim.mode == 'normal'))) || antigravity.customCompletionShown)"
+      },
+      {
+        "command": "antigravity.prioritized.supercompleteEscape",
+        "key": "escape",
+        "mac": "escape",
+        "when": "!(editorTextFocus && ((vim.active && vim.mode != 'Normal') || (neovim.init && neovim.mode != 'normal'))) && (antigravity.customCompletionShown || antigravity.postApplyDecorationShown || inlineSuggestionVisible) && !suggestWidgetVisible"
+      },
+      {
+        "key": "escape",
+        "command": "extension.vim_escape",
+        "when": "editorTextFocus && vim.active && !inDebugRepl"
+      }
+    ],
+    "languages": [
+      {
+        "id": "jsonc",
+        "filenames": [
+          "mcp_config.json"
+        ]
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "**/mcp_config.json",
+        "url": "./schemas/mcp_config.schema.json"
+      }
+    ]
+  },
+  "resolutions": {
+    "@exa/agent-ui-toolkit": "file:../../../exa/agent_ui_toolkit"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "plugins": [
+      "@trivago/prettier-plugin-sort-imports",
+      "@babel/plugin-transform-explicit-resource-management"
+    ],
+    "importOrder": [
+      "vscode",
+      "<THIRD_PARTY_MODULES>",
+      "^@exa/(.*)$",
+      "^[./]"
+    ],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true
+  }
+}

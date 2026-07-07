@@ -1,0 +1,287 @@
+{
+  "name": "反重力远程 WSL",
+  "displayName": "反重力遥控器 - WSL",
+  "description": "打开适用于 Linux 的 Windows 子系统 (WSL) 中的任何文件夹。",
+  "version": "0.0.1",
+  "publisher": "google",
+  "engines": {
+    "vscode": "^1.70.2"
+  },
+  "extensionKind": [
+    "ui"
+  ],
+  "enabledApiProposals": [
+    "resolvers",
+    "contribViewsRemote"
+  ],
+  "keywords": [
+    "remote development",
+    "remote",
+    "wsl"
+  ],
+  "api": "none",
+  "activationEvents": [
+    "onCommand:antigravityremotewsl.connect",
+    "onCommand:antigravityremotewsl.connectInNewWindow",
+    "onCommand:antigravityremotewsl.connectUsingDistro",
+    "onCommand:antigravityremotewsl.connectUsingDistroInNewWindow",
+    "onCommand:antigravityremotewsl.showLog",
+    "onResolveRemoteAuthority:wsl",
+    "onView:antigravityWslTargets"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "世界SL",
+      "properties": {
+        "remote.WSL.serverDownloadUrlTemplate": {
+          "type": "string",
+          "description": "下载反重力服务器的 URL。可以替换以下变量：${os}、${arch}、${ideVersion}、${vscodeVersion}、${commit}、${quality}。",
+          "scope": "application",
+          "default": "https://antigravity-stable.codeiumdata.com/${os}-reh-${arch}/${quality}/${commit}/antigravity-reh-${os}-${arch}-${ideVersion}.tar.gz"
+        },
+        "remote.WSL.experimental.disableServerChecksum": {
+          "type": "boolean",
+          "description": "实验：禁用服务器校验和验证。仅建议用于开发和测试。",
+          "scope": "application",
+          "default": false
+        }
+      }
+    },
+    "views": {
+      "remote": [
+        {
+          "id": "antigravityWslTargets",
+          "name": "WSL 目标（反重力）",
+          "group": "targets@1",
+          "when": "(isWindows && !isWeb)",
+          "remoteName": "wsl"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "antigravityremotewsl.connect",
+        "title": "连接到 WSL",
+        "category": "Remote-WSL"
+      },
+      {
+        "command": "antigravityremotewsl.connectInNewWindow",
+        "title": "在新窗口中连接到 WSL",
+        "category": "Remote-WSL"
+      },
+      {
+        "command": "antigravityremotewsl.connectUsingDistro",
+        "title": "使用 Distro 连接到 WSL...",
+        "category": "Remote-WSL"
+      },
+      {
+        "command": "antigravityremotewsl.connectUsingDistroInNewWindow",
+        "title": "在新窗口中使用 Distro 连接到 WSL...",
+        "category": "Remote-WSL"
+      },
+      {
+        "command": "antigravityremotewsl.showLog",
+        "title": "显示日志",
+        "category": "Remote-WSL"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.emptyWindowInNewWindow",
+        "title": "在新窗口中连接",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.emptyWindowInCurrentWindow",
+        "title": "在当前窗口中连接"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.reopenFolderInCurrentWindow",
+        "title": "在当前窗口中打开"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.reopenFolderInNewWindow",
+        "title": "在新窗口中打开",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.deleteFolderHistoryItem",
+        "title": "从最近的列表中删除",
+        "icon": "$(x)"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.refresh",
+        "title": "刷新",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.addDistro",
+        "title": "添加发行版",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.setDefaultDistro",
+        "title": "设置为默认发行版"
+      },
+      {
+        "command": "antigravityremotewsl.explorer.deleteDistro",
+        "title": "删除发行版"
+      }
+    ],
+    "resourceLabelFormatters": [
+      {
+        "scheme": "vscode-remote",
+        "authority": "wsl+*",
+        "formatting": {
+          "label": "${路径}",
+          "separator": "/",
+          "tildify": true,
+          "workspaceSuffix": "WSL"
+        }
+      }
+    ],
+    "menus": {
+      "statusBar/remoteIndicator": [
+        {
+          "command": "antigravityremotewsl.connect",
+          "when": "(isWindows && !isWeb)",
+          "group": "remote_20_wsl_1general@1"
+        },
+        {
+          "command": "antigravityremotewsl.connectUsingDistro",
+          "when": "(isWindows && !isWeb)",
+          "group": "remote_20_wsl_1general@2"
+        },
+        {
+          "command": "antigravityremotewsl.showLog",
+          "when": "remoteName =~ /^wsl$/",
+          "group": "remote_20_wsl_1general@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "antigravityremotewsl.connect",
+          "when": "(isWindows && !isWeb)"
+        },
+        {
+          "command": "antigravityremotewsl.connectInNewWindow",
+          "when": "(isWindows && !isWeb)"
+        },
+        {
+          "command": "antigravityremotewsl.connectUsingDistro",
+          "when": "(isWindows && !isWeb)"
+        },
+        {
+          "command": "antigravityremotewsl.connectUsingDistroInNewWindow",
+          "when": "(isWindows && !isWeb)"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.refresh",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.addDistro",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.emptyWindowInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.emptyWindowInCurrentWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.reopenFolderInCurrentWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.reopenFolderInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.deleteFolderHistoryItem",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.setDefaultDistro",
+          "when": "false"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.deleteDistro",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "antigravityremotewsl.explorer.addDistro",
+          "when": "view == antigravityWslTargets",
+          "group": "navigation"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.refresh",
+          "when": "view == antigravityWslTargets",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "antigravityremotewsl.explorer.emptyWindowInNewWindow",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.distro$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.emptyWindowInNewWindow",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.distro$/",
+          "group": "navigation@2"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.emptyWindowInCurrentWindow",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.distro$/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.setDefaultDistro",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.distro$/",
+          "group": "management@1"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.deleteDistro",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.distro$/",
+          "group": "management@2"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.reopenFolderInNewWindow",
+          "when": "viewItem == antigravityremotewsl.explorer.folder",
+          "group": "inline@1"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.reopenFolderInNewWindow",
+          "when": "viewItem == antigravityremotewsl.explorer.folder",
+          "group": "navigation@2"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.reopenFolderInCurrentWindow",
+          "when": "viewItem == antigravityremotewsl.explorer.folder",
+          "group": "navigation@1"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.deleteFolderHistoryItem",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.folder/",
+          "group": "navigation@3"
+        },
+        {
+          "command": "antigravityremotewsl.explorer.deleteFolderHistoryItem",
+          "when": "viewItem =~ /^antigravityremotewsl.explorer.folder/",
+          "group": "inline@2"
+        }
+      ]
+    }
+  },
+  "prettier": {
+    "singleQuote": true,
+    "useTabs": true,
+    "tabWidth": 4,
+    "trailingComma": "all",
+    "printWidth": 80
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "反重力代码执行器",
+  "displayName": "反重力代码执行者",
+  "description": "执行级联生成的代码。",
+  "version": "0.0.1",
+  "publisher": "google",
+  "engines": {
+    "vscode": "^1.70.2"
+  },
+  "activationEvents": [],
+  "api": "none",
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "antigravity-code-executor.executeCode",
+        "title": "执行代码（反重力）",
+        "category": "Antigravity"
+      }
+    ]
+  },
+  "prettier": {
+    "singleQuote": true,
+    "useTabs": true,
+    "tabWidth": 4,
+    "trailingComma": "all",
+    "printWidth": 80
+  }
+}

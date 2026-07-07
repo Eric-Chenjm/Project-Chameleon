@@ -1,0 +1,189 @@
+{
+  "name": "反重力开发容器",
+  "displayName": "反重力遥控器 - 开发容器",
+  "description": "在 Antigravity 中使用开发容器",
+  "version": "0.0.1",
+  "publisher": "google",
+  "engines": {
+    "vscode": "^1.25.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onResolveRemoteAuthority:dev-container",
+    "onCommand:antigravity-dev-containers.reopenInContainer",
+    "onCommand:antigravity-dev-containers.showLog",
+    "onCommand:antigravity-dev-containers.openInContainer",
+    "onCommand:antigravity-dev-containers.attachToRunningContainer"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "反重力遥控器 - 开发容器",
+      "properties": {
+        "remote.antigravityDevContainers.enableSSHAgentForwarding": {
+          "type": "boolean",
+          "default": true,
+          "description": "连接到 devcontainers 时启用 SSH 代理转发。"
+        },
+        "remote.antigravityDevContainers.experimental.disableServerChecksum": {
+          "type": "boolean",
+          "scope": "application",
+          "default": false,
+          "description": "禁用服务器校验和验证。仅建议用于开发和测试。"
+        }
+      }
+    },
+    "resourceLabelFormatters": [
+      {
+        "scheme": "vscode-remote",
+        "authority": "dev-container+*",
+        "formatting": {
+          "label": "${路径}",
+          "separator": "/",
+          "tildify": true,
+          "workspaceSuffix": "[Dev Container]",
+          "workspaceTooltip": "Connect to a development container"
+        }
+      }
+    ],
+    "views": {
+      "remote": [
+        {
+          "id": "antigravityDevContainers",
+          "name": "开发容器（反重力）",
+          "group": "targets@1",
+          "remoteName": "dev-container"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "antigravity-dev-containers.reopenInContainer",
+        "title": "在容器中重新打开",
+        "category": "Dev Containers",
+        "when": "!remoteName"
+      },
+      {
+        "command": "antigravity-dev-containers.showLog",
+        "title": "显示反重力开发容器日志",
+        "category": "Dev Containers"
+      },
+      {
+        "command": "antigravity-dev-containers.openInContainer",
+        "title": "打开容器中的文件夹",
+        "category": "Dev Containers",
+        "when": "!remoteName"
+      },
+      {
+        "command": "antigravity-dev-containers.reopenFolderLocally",
+        "title": "在本地重新打开文件夹",
+        "category": "Dev Containers",
+        "when": "remoteName"
+      },
+      {
+        "command": "antigravity-dev-containers.attachToRunningContainer",
+        "title": "附加到正在运行的容器",
+        "category": "Dev Containers",
+        "when": "!remoteName"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "antigravity-dev-containers.reopenInContainer",
+          "when": "!remoteName && workspaceFolderCount > 0"
+        },
+        {
+          "command": "antigravity-dev-containers.openInContainer",
+          "when": "!remoteName"
+        },
+        {
+          "command": "antigravity-dev-containers.reopenFolderLocally",
+          "when": "remoteName && workspaceFolderCount > 0"
+        },
+        {
+          "command": "antigravity-dev-containers.attachToRunningContainer",
+          "when": "!remoteName"
+        }
+      ],
+      "statusBar/remoteIndicator": [
+        {
+          "command": "antigravity-dev-containers.openInContainer",
+          "when": "remoteName =~ /^dev-container$/ && remoteConnectionState == connected",
+          "group": "remote_11_devcontainers_2general@1"
+        },
+        {
+          "command": "antigravity-dev-containers.attachToRunningContainer",
+          "when": "remoteName =~ /^dev-container$/ && remoteConnectionState == connected",
+          "group": "remote_11_devcontainers_2general@2"
+        },
+        {
+          "command": "antigravity-dev-containers.reopenFolderLocally",
+          "when": "remoteName =~ /^dev-container$/ && remoteConnectionState == connected && workspaceFolderCount > 0",
+          "group": "remote_11_devcontainers_2general@1"
+        },
+        {
+          "command": "antigravity-dev-containers.reopenInContainer",
+          "when": "remoteName =~ /^dev-container$/ && remoteConnectionState == connected && workspaceFolderCount > 0",
+          "group": "remote_11_devcontainers_2general@2"
+        },
+        {
+          "command": "antigravity-dev-containers.showLog",
+          "when": "remoteName =~ /^dev-container$/ && remoteConnectionState == connected",
+          "group": "remote_11_devcontainers_2general@4"
+        },
+        {
+          "command": "antigravity-dev-containers.openInContainer",
+          "when": "remoteConnectionState == disconnected",
+          "group": "remote_11_devcontainers_4local@1"
+        },
+        {
+          "command": "antigravity-dev-containers.attachToRunningContainer",
+          "when": "remoteConnectionState == disconnected",
+          "group": "remote_11_devcontainers_4local@2"
+        },
+        {
+          "command": "antigravity-dev-containers.reopenInContainer",
+          "when": "remoteConnectionState == disconnected && workspaceFolderCount > 0",
+          "group": "remote_11_devcontainers_4local@3"
+        },
+        {
+          "command": "antigravity-dev-containers.openInContainer",
+          "when": "!remoteName && !virtualWorkspace",
+          "group": "remote_11_devcontainers_4local@5"
+        },
+        {
+          "command": "antigravity-dev-containers.attachToRunningContainer",
+          "when": "!remoteName && !virtualWorkspace",
+          "group": "remote_11_devcontainers_4local@6"
+        },
+        {
+          "command": "antigravity-dev-containers.reopenInContainer",
+          "when": "!remoteName && !virtualWorkspace && workspaceFolderCount > 0",
+          "group": "remote_11_devcontainers_4local@7"
+        }
+      ]
+    }
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "prettier": {
+    "singleQuote": true,
+    "useTabs": true,
+    "tabWidth": 4
+  },
+  "extensionKind": [
+    "ui"
+  ],
+  "enabledApiProposals": [
+    "resolvers",
+    "contribViewsRemote"
+  ]
+}

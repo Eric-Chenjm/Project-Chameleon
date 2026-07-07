@@ -1,0 +1,18 @@
+{
+  "supportedBundles": [
+    {
+      "antigravityVersion": "2.0.0",
+      "ideVersion": "1.23.2",
+      "internalVersion": "1.107.0",
+      "sourceSha256": "F67C94BB6CCA7D520ACEE1871912CBFC93EE54D5812C818886B4911D08415146",
+      "notes": "Initial Antigravity 2.0.0 UI bundle captured from the local scratch extraction."
+    },
+    {
+      "antigravityVersion": "2.0.6",
+      "ideVersion": "2.0.6",
+      "internalVersion": "2.0.6",
+      "sourceSha256": "B5B9843AEC0237B1A76CA2DB604A71EF6396AFE7E6878EFFBC07D21F1A8EA3E6",
+      "notes": "Antigravity 2.0.6 UI bundle captured from local dynamic port 2719."
+    }
+  ]
+}
