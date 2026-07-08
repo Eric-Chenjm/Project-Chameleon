@@ -78,23 +78,17 @@ def main():
         shutil.copy2(cs_src, cs_dst)
         log("注入 customScheme 拦截器成功，AI 界面汉化已激活！")
         
-    log("3.5 部署核心 UI 变色龙词典及原版主程序 ...")
+    log("3.5 部署预编译汉化 UI 包到系统缓存 ...")
     os.makedirs(appdata_dir, exist_ok=True)
-    dict_src = os.path.join(trans_dir, "chameleon_dict.json")
-    if os.path.exists(dict_src):
-        dict_dst = os.path.join(appdata_dir, "chameleon_dict.json")
-        shutil.copy2(dict_src, dict_dst)
-        log(f"UI 变色龙词典成功注入至系统缓存: {appdata_dir}")
+    # 部署预编译好的汉化包 zh_cn_ui_main.js
+    ui_src = os.path.join(trans_dir, "zh_cn_ui_main.js")
+    if os.path.exists(ui_src):
+        ui_dst = os.path.join(appdata_dir, "zh_cn_ui_main.js")
+        shutil.copy2(ui_src, ui_dst)
+        log(f"预编译汉化 UI 包成功部署至: {ui_dst}")
     else:
-        log("警告：未找到 chameleon_dict.json，界面汉化将失效！")
-
-    main_src = os.path.join(trans_dir, "main.js")
-    if os.path.exists(main_src):
-        main_dst = os.path.join(appdata_dir, "original_ui_main.js")
-        shutil.copy2(main_src, main_dst)
-        log(f"原版 English main.js 成功拷贝至: {appdata_dir}")
-    else:
-        log("警告：未找到原版 main.js")
+        print("[-] 严重错误：找不到 zh_cn_ui_main.js，汉化将失效！")
+        sys.exit(1)
         
     log("4. 重新封包 app.asar ...")
     tmp_asar = asar_path + ".tmp"
@@ -107,6 +101,7 @@ def main():
     shutil.rmtree(extract_dir)
     
     log("=========== 完美汉化注入完成！ ===========")
+    log("请重启 Antigravity 或按 Ctrl+R (Windows) / Cmd+R (Mac) 重载界面。")
 
 if __name__ == "__main__":
     main()
