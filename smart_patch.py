@@ -78,15 +78,23 @@ def main():
         shutil.copy2(cs_src, cs_dst)
         log("注入 customScheme 拦截器成功，AI 界面汉化已激活！")
         
-    log("3.5 部署核心 UI 变色龙预编译产物 ...")
-    ui_bundle_src = os.path.join(trans_dir, "zh_cn_ui_main.js")
-    if os.path.exists(ui_bundle_src):
-        os.makedirs(appdata_dir, exist_ok=True)
-        ui_bundle_dst = os.path.join(appdata_dir, "zh_cn_ui_main.js")
-        shutil.copy2(ui_bundle_src, ui_bundle_dst)
-        log(f"UI 变色龙引擎成功注入至系统缓存: {appdata_dir}")
+    log("3.5 部署核心 UI 变色龙词典及原版主程序 ...")
+    os.makedirs(appdata_dir, exist_ok=True)
+    dict_src = os.path.join(trans_dir, "chameleon_dict.json")
+    if os.path.exists(dict_src):
+        dict_dst = os.path.join(appdata_dir, "chameleon_dict.json")
+        shutil.copy2(dict_src, dict_dst)
+        log(f"UI 变色龙词典成功注入至系统缓存: {appdata_dir}")
     else:
-        log("警告：未找到预编译的 zh_cn_ui_main.js，可能导致界面白屏！")
+        log("警告：未找到 chameleon_dict.json，界面汉化将失效！")
+
+    main_src = os.path.join(trans_dir, "main.js")
+    if os.path.exists(main_src):
+        main_dst = os.path.join(appdata_dir, "original_ui_main.js")
+        shutil.copy2(main_src, main_dst)
+        log(f"原版 English main.js 成功拷贝至: {appdata_dir}")
+    else:
+        log("警告：未找到原版 main.js")
         
     log("4. 重新封包 app.asar ...")
     tmp_asar = asar_path + ".tmp"
