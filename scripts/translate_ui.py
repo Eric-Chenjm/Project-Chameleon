@@ -456,7 +456,7 @@ def main():
     print(f"Replaced {replaced_count} of {len(translations)} strings.")
     
     # ---------------- 注入全局动态 DOM 翻译拦截器 ----------------
-    dom_translator_js = """
+    dom_translator_js = r"""
 // 注入动态 DOM 汉化引擎 (针对 React 深度封装无法静态替换的长句与危险短词)
 (function() {
   const dynamicDict = {
