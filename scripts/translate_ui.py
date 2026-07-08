@@ -648,7 +648,12 @@ def main():
       return text;
   };
 
+  const translatedNodes = new WeakSet();
+
   const walkNode = (node) => {
+    if (translatedNodes.has(node)) return;
+    translatedNodes.add(node);
+
     if (node.nodeType === 3) { // TEXT_NODE
        const newText = translateText(node.textContent);
        if (newText !== node.textContent) {
@@ -667,6 +672,8 @@ def main():
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach(walkNode);
           if (mutation.type === 'characterData') {
+             // If React directly modifies text, we should allow translation again
+             // but avoid infinite loops if our translation causes a mutation.
              const newText = translateText(mutation.target.textContent);
              if (newText !== mutation.target.textContent) {
                  mutation.target.textContent = newText;

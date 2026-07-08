@@ -1,0 +1,192 @@
+[
+    {
+        "name": "alphafold-database-fetch-and-analyze",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\alphafold_database_fetch_and_analyze\\SKILL.md"
+    },
+    {
+        "name": "alphagenome-single-variant-analysis",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\alphagenome_single_variant_analysis\\SKILL.md"
+    },
+    {
+        "name": "chembl-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\chembl_database\\SKILL.md"
+    },
+    {
+        "name": "clinical-trials-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\clinical_trials_database\\SKILL.md"
+    },
+    {
+        "name": "clinvar-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\clinvar_database\\SKILL.md"
+    },
+    {
+        "name": "credentials",
+        "description": ">-",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\credentials\\SKILL.md"
+    },
+    {
+        "name": "dbsnp-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\dbsnp_database\\SKILL.md"
+    },
+    {
+        "name": "embl-ebi-ols",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\embl_ebi_ols\\SKILL.md"
+    },
+    {
+        "name": "encode-ccres-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\encode_ccres_database\\SKILL.md"
+    },
+    {
+        "name": "ensembl-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\ensembl_database\\SKILL.md"
+    },
+    {
+        "name": "foldseek-structural-search",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\foldseek_structural_search\\SKILL.md"
+    },
+    {
+        "name": "gnomad-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\gnomad_database\\SKILL.md"
+    },
+    {
+        "name": "gtex-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\gtex_database\\SKILL.md"
+    },
+    {
+        "name": "human-protein-atlas-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\human_protein_atlas_database\\SKILL.md"
+    },
+    {
+        "name": "interpro-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\interpro_database\\SKILL.md"
+    },
+    {
+        "name": "jaspar-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\jaspar_database\\SKILL.md"
+    },
+    {
+        "name": "literature-search-arxiv",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\literature_search_arxiv\\SKILL.md"
+    },
+    {
+        "name": "literature-search-biorxiv",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\literature_search_biorxiv\\SKILL.md"
+    },
+    {
+        "name": "literature-search-europepmc",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\literature_search_europepmc\\SKILL.md"
+    },
+    {
+        "name": "literature-search-openalex",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\literature_search_openalex\\SKILL.md"
+    },
+    {
+        "name": "ncbi-sequence-fetch",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\ncbi_sequence_fetch\\SKILL.md"
+    },
+    {
+        "name": "openfda-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\openfda_database\\SKILL.md"
+    },
+    {
+        "name": "opentargets-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\opentargets_database\\SKILL.md"
+    },
+    {
+        "name": "pdb-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\pdb_database\\SKILL.md"
+    },
+    {
+        "name": "predictingthepast",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\predictingthepast\\SKILL.md"
+    },
+    {
+        "name": "protein-sequence-msa",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\protein_sequence_msa\\SKILL.md"
+    },
+    {
+        "name": "protein-sequence-similarity-search",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\protein_sequence_similarity_search\\SKILL.md"
+    },
+    {
+        "name": "pubchem-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\pubchem_database\\SKILL.md"
+    },
+    {
+        "name": "pubmed-database",
+        "description": ">-",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\pubmed_database\\SKILL.md"
+    },
+    {
+        "name": "pymol",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\pymol\\SKILL.md"
+    },
+    {
+        "name": "quickgo-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\quickgo_database\\SKILL.md"
+    },
+    {
+        "name": "reactome-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\reactome_database\\SKILL.md"
+    },
+    {
+        "name": "string-database",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\string_database\\SKILL.md"
+    },
+    {
+        "name": "ucsc-conservation-and-tfbs",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\ucsc_conservation_and_tfbs\\SKILL.md"
+    },
+    {
+        "name": "unibind-database",
+        "description": ">-",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\unibind_database\\SKILL.md"
+    },
+    {
+        "name": "uniprot-database",
+        "description": ">-",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\uniprot_database\\SKILL.md"
+    },
+    {
+        "name": "uv",
+        "description": ">-",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\uv\\SKILL.md"
+    },
+    {
+        "name": "workflow-skill-creator",
+        "description": ">",
+        "path": "C:\\Users\\90513\\.gemini\\config\\plugins\\science\\skills\\workflow_skill_creator\\SKILL.md"
+    }
+]
