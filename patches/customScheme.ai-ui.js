@@ -31,85 +31,119 @@ function registerCustomSchemes() {
     ]);
 }
 function registerCustomSchemeHandlers() {
-    electron_1.protocol.handle('plugin', async (request) => {
-        const url = new URL(request.url);
-        const authority = url.hostname;
-        const originalHost = exports.extensionAuthorities.get(authority);
-        if (!originalHost) {
-            return new Response(null, { status: 404 });
-        }
-        const targetUrl = new URL(url.pathname + url.search, originalHost);
-        try {
-            const fetchOptions = {
-                method: request.method,
-                headers: request.headers,
-                body: request.body,
-            };
-            if (request.body) {
-                fetchOptions.duplex = 'half';
-            }
-            const response = await electron_1.net.fetch(targetUrl.toString(), fetchOptions);
-            return response;
-        }
-        catch (err) {
-            console.error(`Failed to proxy request to ${targetUrl}:`, err);
-            return new Response(null, { status: 500 });
-        }
-    });
-    // 清除缓存以确保加载最新汉化包
-    electron_1.session.defaultSession.clearCache().catch((err) => {
-        console.error("Failed to clear session cache:", err);
-    });
-    // 核心：直接从用户数据目录加载预编译好的汉化 UI 包
-    electron_1.protocol.handle('agy-ui', async () => {
-        const path = require("path");
-        const fsPromises = require("fs/promises");
-        const appDataPath = electron_1.app.getPath('userData');
-        const targetPath = path.join(appDataPath, 'zh_cn_ui_main.js');
-        try {
-            const content = await fsPromises.readFile(targetPath);
-            console.log("Serving translated AI UI bundle:", targetPath);
-            return new Response(content, {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/javascript; charset=utf-8',
-                    'Access-Control-Allow-Origin': '*',
-                    'Cache-Control': 'no-store'
+    let appDataPath = '';
+    try {
+        appDataPath = electron_1.app ? electron_1.app.getPath('userData') : '';
+    } catch (e) {
+        console.error("Failed to get userData path:", e);
+    }
+
+    try {
+        electron_1.protocol.handle('plugin', async (request) => {
+            try {
+                const url = new URL(request.url);
+                const authority = url.hostname;
+                const originalHost = exports.extensionAuthorities.get(authority);
+                if (!originalHost) {
+                    return new Response(null, { status: 404 });
                 }
+                const targetUrl = new URL(url.pathname + url.search, originalHost);
+                const fetchOptions = {
+                    method: request.method,
+                    headers: request.headers,
+                    body: request.body,
+                };
+                if (request.body) {
+                    fetchOptions.duplex = 'half';
+                }
+                return await electron_1.net.fetch(targetUrl.toString(), fetchOptions);
+            } catch (err) {
+                console.error(`Failed to proxy request:`, err);
+                return new Response(null, { status: 500 });
+            }
+        });
+    } catch (e) {
+        console.error("Failed to register plugin handler:", e);
+    }
+
+    // 清除缓存以确保加载最新汉化包
+    try {
+        if (electron_1.session && electron_1.session.defaultSession) {
+            electron_1.session.defaultSession.clearCache().catch((err) => {
+                console.error("Failed to clear session cache:", err);
             });
-        } catch(e) {
-            console.error("Failed to load zh_cn_ui_main.js, falling back to original:", e);
-            return new Response('// Chameleon: translation file not found, app loads normally', {
+        }
+    } catch (e) {}
+
+    // 核心：直接从用户数据目录加载预编译好的汉化 UI 包
+    try {
+        electron_1.protocol.handle('agy-ui', async () => {
+            const path = require("path");
+            const fsPromises = require("fs/promises");
+            const targetPath = appDataPath ? path.join(appDataPath, 'zh_cn_ui_main.js') : '';
+            if (targetPath) {
+                try {
+                    const content = await fsPromises.readFile(targetPath);
+                    console.log("Serving translated AI UI bundle:", targetPath);
+                    return new Response(content, {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'application/javascript; charset=utf-8',
+                            'Access-Control-Allow-Origin': '*',
+                            'Cache-Control': 'no-store'
+                        }
+                    });
+                } catch(e) {
+                    console.error("Failed to load zh_cn_ui_main.js:", e);
+                }
+            }
+            return new Response('// Chameleon fallback', {
                 status: 200,
                 headers: { 'Content-Type': 'application/javascript; charset=utf-8' }
             });
-        }
-    });
-    // 非阻塞后台：云端字典自动更新（下次运行 smart_patch 时生效）
-    setTimeout(() => {
-        try {
-            const https = require('https');
-            const fs = require('fs');
-            const path = require('path');
-            const appDataPath = electron_1.app.getPath('userData');
-            const url = 'https://raw.githubusercontent.com/Eric-Chenjm/Project-Chameleon/main/translations/chameleon_dict.json';
-            https.get(url, (res) => {
-                if (res.statusCode !== 200) return;
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
+        });
+    } catch (e) {
+        console.error("Failed to register agy-ui handler:", e);
+    }
+
+    // 非阻塞后台：云端字典自动更新
+    try {
+        setTimeout(() => {
+            try {
+                if (!appDataPath) return;
+                const https = require('https');
+                const fs = require('fs');
+                const path = require('path');
+                const url = 'https://raw.githubusercontent.com/Eric-Chenjm/Project-Chameleon/main/translations/chameleon_dict.json';
+                https.get(url, (res) => {
+                    if (res.statusCode !== 200) return;
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        try {
+                            JSON.parse(data);
+                            fs.writeFileSync(path.join(appDataPath, 'chameleon_dict.json'), data, 'utf8');
+                        } catch(e) {}
+                    });
+                }).on('error', () => {});
+            } catch(e) {}
+        }, 5000);
+    } catch (e) {}
+
+    try {
+        if (electron_1.session && electron_1.session.defaultSession && electron_1.session.defaultSession.webRequest) {
+            electron_1.session.defaultSession.webRequest.onBeforeRequest(
+                { urls: ['https://127.0.0.1:*/main.js'] },
+                (details, callback) => {
                     try {
-                        JSON.parse(data);
-                        fs.writeFileSync(path.join(appDataPath, 'chameleon_dict.json'), data, 'utf8');
-                    } catch(e) {}
-                });
-            }).on('error', () => {});
-        } catch(e) {}
-    }, 3000);
-    electron_1.session.defaultSession.webRequest.onBeforeRequest(
-        { urls: ['https://127.0.0.1:*/main.js'] },
-        (details, callback) => {
-            callback({ redirectURL: 'agy-ui://bundle/main.js' });
+                        callback({ redirectURL: 'agy-ui://bundle/main.js' });
+                    } catch (e) {
+                        callback({});
+                    }
+                }
+            );
         }
-    );
+    } catch (e) {
+        console.error("Failed to set onBeforeRequest redirect:", e);
+    }
 }

@@ -40,12 +40,17 @@ def main():
         print(f"[-] 找不到 app.asar: {asar_path}")
         sys.exit(1)
         
-    log("1. 备份原版 app.asar ...")
+    log("1. 检查并备份 app.asar ...")
     if not os.path.exists(asar_bak):
         shutil.copy2(asar_path, asar_bak)
-        log("备份成功。")
+        log("首次安装，备份成功。")
     else:
-        log("已有备份，直接使用原备份。")
+        # 如果 app.asar 的修改时间比 app.asar.bak 更新，说明官方刚升级了版本
+        if os.path.getmtime(asar_path) > os.path.getmtime(asar_bak):
+            shutil.copy2(asar_path, asar_bak)
+            log("检测到官方 Antigravity 已升级，已自动更新原版 app.asar.bak 备份！")
+        else:
+            log("已有最新备份，直接使用原备份。")
         
     log("2. 拆解 app.asar (这可能需要十几秒) ...")
     if os.path.exists(extract_dir):
