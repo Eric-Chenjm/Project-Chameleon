@@ -80,9 +80,15 @@ def fetch_and_rebuild():
         if os.path.exists(appdata_ui):
             shutil.copy2(appdata_ui, repo_ui)
             
-        # 3. 提交 Git 并 Push 到 GitHub
-        subprocess.run('git add . && git commit -m "auto: 🤖 Chameleon watchdog auto-adapted new official update" && git push', cwd=repo_dir, shell=True)
-        print("[+] 最新汉化包已自动编译并 Push 至 GitHub 仓库！")
+        # 3. 提交 Git 并 Push 到 GitHub (仅在拥有凭据的开发者本机生效，开源用户无权限将自动安全跳过)
+        try:
+            push_res = subprocess.run('git add . && git commit -m "auto: 🤖 Chameleon watchdog auto-adapted new official update" && git push', cwd=repo_dir, shell=True, capture_output=True, text=True)
+            if push_res.returncode == 0:
+                print("[+] 最新汉化包已自动编译并成功 Push 至 GitHub 仓库！")
+            else:
+                print("[i] 普通开源用户模式：Git 推送已自动安全隔离（无需权限）。")
+        except Exception:
+            pass
 
     # 4. 下载 GitHub 最新 Zip 包并解压到 G:\Antigravity
     try:
