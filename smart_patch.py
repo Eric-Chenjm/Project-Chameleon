@@ -46,13 +46,15 @@ def main():
         if "Antigravity.exe" in chk_process.stdout:
             log("⚠️ 检测到 Antigravity 正在运行中！")
             log("为防止文件被锁导致闪退或注入失败，请先手动退出 Antigravity 软件。")
-            input("按回车键 [Enter] 继续注入流程...")
+            if sys.stdin.isatty():
+                input("按回车键 [Enter] 继续注入流程...")
     elif system_name == "Darwin":
         chk_process = subprocess.run('pgrep -f "Antigravity"', capture_output=True, text=True, shell=True)
         if chk_process.returncode == 0:
             log("⚠️ 检测到 Antigravity 正在运行中！")
             log("为防止文件被锁，请先手动退出 Antigravity 软件。")
-            input("按回车键 [Enter] 继续注入流程...")
+            if sys.stdin.isatty():
+                input("按回车键 [Enter] 继续注入流程...")
         
     log("1. 检查并备份 app.asar ...")
     if not os.path.exists(asar_bak):
