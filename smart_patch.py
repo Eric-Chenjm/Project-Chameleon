@@ -120,40 +120,9 @@ def main():
     
     log("5. 清理临时解包目录 ...")
     shutil.rmtree(extract_dir)
-
-    log("6. 自动生成桌面【Antigravity (中文守护版)】快捷图标 ...")
-    try:
-        if system_name == "Windows":
-            desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
-            lnk_path = os.path.join(desktop, 'Antigravity (中文守护版).lnk')
-            icon_path = os.path.join(install_dir, 'Antigravity.exe')
-            vbs_launcher = os.path.join(current_dir, "antigravity_launcher.vbs")
-            if not os.path.exists(vbs_launcher):
-                with open(vbs_launcher, "w", encoding="utf-8") as vf:
-                    launcher_py = os.path.join(current_dir, "scripts", "antigravity_launcher.py")
-                    vf.write(f'Set WshShell = CreateObject("WScript.Shell")\nWshShell.Run "python ""{launcher_py}""", 0, False\n')
-            
-            ps_content = f'''
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("{lnk_path}")
-$Shortcut.TargetPath = "wscript.exe"
-$Shortcut.Arguments = '"{vbs_launcher}"'
-$Shortcut.IconLocation = "{icon_path},0"
-$Shortcut.Description = "双击打开 Antigravity，实时检测版本更新并自动汉化"
-$Shortcut.Save()
-'''
-            ps_file = os.path.join(current_dir, "scratch", "create_shortcut.ps1")
-            os.makedirs(os.path.dirname(ps_file), exist_ok=True)
-            with open(ps_file, "w", encoding="utf-8-sig") as f:
-                f.write(ps_content)
-            subprocess.run(f'powershell -ExecutionPolicy Bypass -File "{ps_file}"', shell=True)
-            log("桌面快捷图标生成成功！")
-    except Exception as e:
-        log(f"生成桌面图标跳过: {e}")
         
     log("=========== 完美汉化注入完成！ ===========")
-    log("以后可直接双击桌面的【Antigravity (中文守护版)】图标打开软件！")
-    log("打开软件时将自动完成 0.001s 极速版本比对与防闪退守护！")
+    log("请重新打开 Antigravity，即可享用 100% 中文界面！")
 
 if __name__ == "__main__":
     main()
