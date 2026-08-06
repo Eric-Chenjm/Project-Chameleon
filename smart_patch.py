@@ -122,7 +122,7 @@ def main():
     shutil.rmtree(extract_dir)
         
     log("=========== 完美汉化注入完成！ ===========")
-    log("请重新打开 Antigravity，即可享用 100% 中文界面！")
+    log("请完全重启 Antigravity 或按 Ctrl+R (Windows) / Cmd+R (Mac) 重载界面。")
 
 if __name__ == "__main__":
     main()
