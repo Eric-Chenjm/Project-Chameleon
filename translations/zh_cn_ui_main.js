@@ -12879,43 +12879,87 @@ projectManagementFeature:void 0})};v(g);d?.client.onAntigravityReady({}).catch(y
 
   const translatedNodes = new WeakSet();
 
-  const walkNode = (node) => {
-    if (translatedNodes.has(node)) return;
-    translatedNodes.add(node);
+  // 判断是否为流式对话、代码块或输入框等高频突变区域，避让这些区域以防破坏 React 虚拟 DOM
+  const isDynamicContentZone = (node) => {
+    try {
+      let el = node.nodeType === 1 ? node : node.parentElement;
+      while (el && el !== document.body) {
+        const cls = (el.className || '').toString().toLowerCase();
+        const id = (el.id || '').toString().toLowerCase();
+        const tagName = (el.tagName || '').toLowerCase();
+        if (
+          tagName === 'textarea' ||
+          tagName === 'input' ||
+          cls.includes('monaco') ||
+          cls.includes('chat') ||
+          cls.includes('conversation') ||
+          cls.includes('markdown') ||
+          cls.includes('stream') ||
+          cls.includes('message-content') ||
+          cls.includes('terminal') ||
+          cls.includes('xterm') ||
+          id.includes('chat') ||
+          id.includes('conversation')
+        ) {
+          return true;
+        }
+        el = el.parentElement;
+      }
+    } catch(e) {}
+    return false;
+  };
 
-    if (node.nodeType === 3) { // TEXT_NODE
-       const newText = translateText(node.textContent);
-       if (newText !== node.textContent) {
-           node.textContent = newText;
-       }
-    } else if (node.nodeType === 1) { // ELEMENT_NODE
-       if (node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
-           node.childNodes.forEach(walkNode);
-       }
-    }
+  const safeTranslateNode = (node) => {
+    try {
+      if (!node || translatedNodes.has(node)) return;
+      translatedNodes.add(node);
+
+      if (isDynamicContentZone(node)) return;
+
+      if (node.nodeType === 3) { // TEXT_NODE
+         const text = node.textContent;
+         if (text && text.trim().length > 0) {
+           const newText = translateText(text);
+           if (newText !== text) {
+             window.requestAnimationFrame(() => {
+               try {
+                 if (node.textContent === text) {
+                   node.textContent = newText;
+                 }
+               } catch(e) {}
+             });
+           }
+         }
+      } else if (node.nodeType === 1) { // ELEMENT_NODE
+         const tag = (node.nodeName || '').toUpperCase();
+         if (tag !== 'SCRIPT' && tag !== 'STYLE' && tag !== 'TEXTAREA' && tag !== 'INPUT') {
+             node.childNodes.forEach(safeTranslateNode);
+         }
+      }
+    } catch(e) {}
   };
 
   const initTranslator = () => {
-      walkNode(document.body);
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach(walkNode);
-          if (mutation.type === 'characterData') {
-             // If React directly modifies text, we should allow translation again
-             // but avoid infinite loops if our translation causes a mutation.
-             const newText = translateText(mutation.target.textContent);
-             if (newText !== mutation.target.textContent) {
-                 mutation.target.textContent = newText;
-             }
-          }
+      try {
+        if (document.body) safeTranslateNode(document.body);
+        const observer = new MutationObserver((mutations) => {
+          try {
+            mutations.forEach((mutation) => {
+              if (mutation.addedNodes) {
+                mutation.addedNodes.forEach(safeTranslateNode);
+              }
+            });
+          } catch(e) {}
         });
-      });
-      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        observer.observe(document.body, { childList: true, subtree: true });
+      } catch(e) {}
   };
   
-  if (document.body) {
-      initTranslator();
-  } else {
-      window.addEventListener('DOMContentLoaded', initTranslator);
-  }
+  try {
+      if (document.body) {
+          initTranslator();
+      } else {
+          window.addEventListener('DOMContentLoaded', initTranslator);
+      }
+  } catch(e) {}
 })();

@@ -25,8 +25,6 @@ function registerCustomSchemes() {
                 secure: true,
                 supportFetchAPI: true,
                 corsEnabled: true,
-                bypassCSP: true,
-                allowServiceWorkers: true,
                 codeCache: true,
             },
         },
@@ -135,7 +133,7 @@ function registerCustomSchemeHandlers() {
     try {
         if (electron_1.session && electron_1.session.defaultSession && electron_1.session.defaultSession.webRequest) {
             electron_1.session.defaultSession.webRequest.onBeforeRequest(
-                { urls: ['https://127.0.0.1:*/main.js'] },
+                { urls: ['https://127.0.0.1:*/main.js*', 'https://127.0.0.1:*/main.js?*'] },
                 (details, callback) => {
                     try {
                         callback({ redirectURL: 'agy-ui://bundle/main.js' });
@@ -144,22 +142,8 @@ function registerCustomSchemeHandlers() {
                     }
                 }
             );
-
-            electron_1.session.defaultSession.webRequest.onHeadersReceived(
-                { urls: ['https://127.0.0.1:*/main.js', 'agy-ui://*/*'] },
-                (details, callback) => {
-                    try {
-                        const responseHeaders = Object.assign({}, details.responseHeaders);
-                        delete responseHeaders['content-security-policy'];
-                        delete responseHeaders['Content-Security-Policy'];
-                        callback({ responseHeaders });
-                    } catch (e) {
-                        callback({});
-                    }
-                }
-            );
         }
     } catch (e) {
-        console.error("Failed to set webRequest handlers:", e);
+        console.error("Failed to set onBeforeRequest redirect:", e);
     }
 }
