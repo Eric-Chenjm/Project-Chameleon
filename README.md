@@ -3,7 +3,7 @@
 **一句话简介：终极 Antigravity 完美汉化框架。独创「云端神经网热更新」与「本地零功耗嗅探」，解决所有界面乱码与更新白屏死机，实现 100% 极客沉浸式中文体验。**
 
 > 🔥 **Antigravity 旗舰级无缝跨平台汉化补丁 (跨版本免疫崩溃)**
-[![Antigravity Compatibility](https://img.shields.io/badge/Antigravity-v2.8.0-blue.svg)](https://github.com/Eric-Chenjm/Project-Chameleon)
+[![Antigravity Compatibility](https://img.shields.io/badge/Antigravity-v2.8.1-blue.svg)](https://github.com/Eric-Chenjm/Project-Chameleon)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Mac-blueviolet.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
