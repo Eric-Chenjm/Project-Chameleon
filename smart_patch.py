@@ -3,6 +3,7 @@ import sys
 import shutil
 import subprocess
 import platform
+import json
 
 def log(msg):
     print(f"[+] {msg}")
@@ -12,6 +13,18 @@ def run_cmd(cmd):
     if result.returncode != 0:
         print(f"[-] 命令执行失败: {cmd}")
         sys.exit(1)
+
+def select_custom_scheme(app_version, current_dir):
+    """Only enable the replacement UI for an explicitly supported runtime."""
+    compat_path = os.path.join(current_dir, "patches", "ai-ui-compat.json")
+    try:
+        with open(compat_path, "r", encoding="utf-8") as compat_file:
+            supported = json.load(compat_file).get("supportedBundles", [])
+        if any(bundle.get("antigravityVersion") == app_version for bundle in supported):
+            return os.path.join(current_dir, "patches", "customScheme.ai-ui.js")
+    except (OSError, json.JSONDecodeError):
+        pass
+    return os.path.join(current_dir, "patches", "customScheme.core.js")
 
 def main():
     system_name = platform.system()
@@ -91,13 +104,22 @@ def main():
         shutil.copy2(prod_src, prod_dst)
         log("注入 product.json 成功！")
         
-    # AI 界面拦截器 customScheme.js
-    cs_src = os.path.join(current_dir, "patches", "customScheme.ai-ui.js")
+    # 仅对声明兼容的版本替换 AI UI；未知版本继续加载官方 UI，避免白屏。
+    app_version = ""
+    try:
+        with open(os.path.join(extract_dir, "package.json"), "r", encoding="utf-8") as package_file:
+            app_version = json.load(package_file).get("version", "")
+    except (OSError, json.JSONDecodeError):
+        log("无法识别 Antigravity 版本，已禁用 AI UI 替换以保证正常启动。")
+    cs_src = select_custom_scheme(app_version, current_dir)
     cs_dst = os.path.join(extract_dir, "dist", "customScheme.js")
     if os.path.exists(cs_src):
         os.makedirs(os.path.dirname(cs_dst), exist_ok=True)
         shutil.copy2(cs_src, cs_dst)
-        log("注入 customScheme 拦截器成功，AI 界面汉化已激活！")
+        if cs_src.endswith("customScheme.ai-ui.js"):
+            log(f"Antigravity {app_version} 已启用兼容的 AI 界面汉化。")
+        else:
+            log(f"Antigravity {app_version or '未知版本'} 未在 AI UI 兼容列表中；保留官方 AI UI 以避免白屏。")
         
     log("3.5 部署预编译汉化 UI 包到系统缓存 ...")
     os.makedirs(appdata_dir, exist_ok=True)
