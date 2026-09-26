@@ -20,6 +20,13 @@
       "internalVersion": "2.15.0",
       "sourceSha256": "5EF4FD67A1D4FAC0B41271B08AF70B4A028AB0A700E3BF86CB07544940A4F7E5",
       "notes": "Antigravity 2.15.0 UI bundle captured from local dynamic port and verified with node --check."
+    },
+    {
+      "antigravityVersion": "2.17.0",
+      "ideVersion": "2.17.0",
+      "internalVersion": "2.17.0",
+      "sourceSha256": "7CD6BF41B9EBBAA74A6C0EAFF0C307447ED957931FB43257503AAA320D5DF655",
+      "notes": "Antigravity 2.17.0 UI bundle captured from local dynamic port and verified with node --check."
     }
   ]
 }
