@@ -22,6 +22,79 @@ def apply_safe_literal_replacement(content, original_literal, translated_literal
     return content, content != before
 
 
+# ---------------------------------------------------------------------------
+# 代码位置保护：以下位置出现的字符串是"程序标识"而不是"界面文案"，
+# 一旦被汉化就会让前后端数据对不上（枚举、持久化状态、键盘事件、对象键…），
+# 历史会话 / 运行状态 / 快捷键等都会因此渲染异常甚至白屏。
+# 这里在替换前先把它们挖出来占位，替换完成后再原样还原。
+# ---------------------------------------------------------------------------
+_PROTECT_KEYS = (
+    "type|kind|kind2|role|id|ids|key|keys|name|names|class|className|state|status|mode|"
+    "action|event|category|level|severity|direction|variant|source|target|language|value|"
+    "view|screen|group|step|phase|stage|result|reason|origin|icon|color|unit|format|method|"
+    "op|channel|provider|model|engine|backend|scope|owner|author|sender|intent|outcome|tab|"
+    "section|pane|part|field|prop|attr|selector|tag|ns|prefix|suffix|alias|code|slug|token|"
+    "topic|targetScreen|activeScreen|modalType|home|unsandboxed|binding|shortcut|command|when|"
+    "scheme|protocol|extension|package|module|file|path|convoState|itemType|nodeType|blockType|"
+    "entryType|viewType|paneType|argName|param|option|flag|groupKey|displayName|stateMachine|"
+    "conversationId|cascadeId|sectionId|screenId|viewId|tabId|paneId|itemId"
+)
+
+# 每条规则 = (正则, 说明)。正则必须含两个分组：
+#   分组 1 = 需要原样保留的前缀；分组 2 = 需要保护的字符串字面量（含引号）。
+# 字符串内容里禁止出现 ';'，避免正则跨越代码边界把真实代码吞进去。
+_STR_D = r'"[^"\\\n;]{0,120}"'
+_STR_S = r"'[^'\\\n;]{0,120}'"
+
+PROTECT_PATTERNS = [
+    # 1) 与后端 / 键盘事件 / 存储值做比较：x === "RUNNING"、a.key === "Tab"
+    (r'((?:===|!==|==)\s*)(' + _STR_D + r')', "比较"),
+    (r'((?:===|!==|==)\s*)(' + _STR_S + r')', "比较"),
+    # 2) switch-case 分支值：case "IDLE":
+    (r'(\bcase\s*)(' + _STR_D + r')(?=\s*:)', "switch case"),
+    (r'(\bcase\s*)(' + _STR_S + r')(?=\s*:)', "switch case"),
+    # 3) 枚举型属性值：type:"subagent"、screen:"General"、group:"Plugins"
+    #    要求前面是 { 或 , 且键名全小写，避免把界面文案里的 "app view: " 当成属性键
+    (r'([{,]\s*(?:' + _PROTECT_KEYS + r')\s*:\s*)(' + _STR_D + r')', "枚举属性"),
+    (r'([{,]\s*(?:' + _PROTECT_KEYS + r')\s*:\s*)(' + _STR_S + r')', "枚举属性"),
+    # 4) 对象键 / 映射表键（键本身用于查找，值才是文案）
+    (r'((?:\{|,)\s*)(' + _STR_D + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))',
+     "对象键"),
+    (r'((?:\{|,)\s*)(' + _STR_S + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))',
+     "对象键"),
+]
+
+_PROTECT_TOKEN = "\u0000CHMPROTECT{0}\u0000"
+
+
+def protect_code_positions(content):
+    """把处于代码逻辑位置的字符串字面量替换为占位符，返回 (内容, 占位符表)。"""
+    placeholders = {}
+    counter = [0]
+    stats = {}
+
+    def _make_sub(label):
+        def _sub(match):
+            idx = counter[0]
+            counter[0] += 1
+            token = _PROTECT_TOKEN.format(idx)
+            placeholders[token] = match.group(2)
+            stats[label] = stats.get(label, 0) + 1
+            return match.group(1) + token
+        return _sub
+
+    for pattern, label in PROTECT_PATTERNS:
+        content = re.sub(pattern, _make_sub(label), content)
+    return content, placeholders, stats
+
+
+def restore_protected(content, placeholders):
+    """还原被保护起来的代码字面量。"""
+    for token, original in placeholders.items():
+        content = content.replace(token, original)
+    return content
+
+
 def apply_string_translation(content, original, translated):
     literal_pattern = re.compile(r"""^(["']).*\1$""")
     # 1. 显式带有外层引号的字面量（例如 '"New Conversation"'）
@@ -81,10 +154,16 @@ def main():
         ),
         help="Path to the extracted Antigravity UI main bundle.",
     )
+    parser.add_argument(
+        "--output",
+        default="",
+        help="Output path of the translated bundle (defaults to <userData>/zh_cn_ui_main.js).",
+    )
     args = parser.parse_args()
     
     # Paths
     input_file = args.input
+    output_override = args.output
     
     system_name = platform.system()
     if system_name == "Windows":
@@ -100,7 +179,7 @@ def main():
         sys.exit(1)
         
     os.makedirs(output_dir, exist_ok=True)
-    output_file = os.path.join(output_dir, "zh_cn_ui_main.js")
+    output_file = output_override or os.path.join(output_dir, "zh_cn_ui_main.js")
     
     if not os.path.exists(input_file):
         print(f"Error: Input file {input_file} not found.")
@@ -2075,10 +2154,21 @@ def main():
     print("Applying translations...")
     replaced_count = 0
 
+    # 先把代码逻辑位置（枚举 / 持久化标识 / 键盘事件 / 对象键）挖出来保护，
+    # 只翻译真正的界面文案，避免把程序标识也汉化导致会话渲染异常。
+    content, _protected, _pstats = protect_code_positions(content)
+    print(f"Protected {len(_protected)} code-level string literals: {_pstats}")
+
     for original, translated in translations.items():
         content, replaced = apply_string_translation(content, original, translated)
         if replaced:
             replaced_count += 1
+
+    content = restore_protected(content, _protected)
+
+    leftover = content.count("\u0000")
+    if leftover:
+        print(f"[!] 警告：仍有 {leftover} 个保护占位符未还原，请检查 PROTECT_PATTERNS！")
 
     print(f"Replaced {replaced_count} of {len(translations)} strings safely.")
     
@@ -2844,13 +2934,22 @@ def main():
           cls.includes('monaco') ||
           cls.includes('chat') ||
           cls.includes('conversation') ||
+          cls.includes('cascade') ||
+          cls.includes('message') ||
+          cls.includes('thread') ||
+          cls.includes('transcript') ||
+          cls.includes('history') ||
+          cls.includes('artifact') ||
           cls.includes('markdown') ||
+          cls.includes('prose') ||
           cls.includes('stream') ||
           cls.includes('message-content') ||
           cls.includes('terminal') ||
           cls.includes('xterm') ||
+          cls.includes('cm-') ||
           id.includes('chat') ||
-          id.includes('conversation')
+          id.includes('conversation') ||
+          id.includes('cascade')
         ) {
           return true;
         }
@@ -2858,6 +2957,25 @@ def main():
       }
     } catch(e) {}
     return false;
+  };
+
+  // 只改写"短界面文案"。对话正文、代码、长段落一律跳过，
+  // 否则直接改 textContent 会让 React 虚拟 DOM 与真实 DOM 失配，导致会话区整块白屏。
+  const isSafeToRewrite = (node) => {
+    try {
+      const text = node.textContent || '';
+      if (!text || text.length > 120) return false;   // 长文本（对话正文等）不碰
+      if (text.indexOf('\n') !== -1) return false;    // 多行内容不碰
+      let el = node.parentElement;
+      while (el && el !== document.body) {
+        if (el.isContentEditable) return false;
+        const tag = (el.tagName || '').toLowerCase();
+        if (tag === 'pre' || tag === 'code' || tag === 'script' ||
+            tag === 'style' || tag === 'textarea' || tag === 'input') return false;
+        el = el.parentElement;
+      }
+      return true;
+    } catch(e) { return false; }
   };
 
   const safeTranslateNode = (node) => {
@@ -2869,7 +2987,7 @@ def main():
 
       if (node.nodeType === 3) { // TEXT_NODE
          const text = node.textContent;
-         if (text && text.trim().length > 0) {
+         if (text && text.trim().length > 0 && isSafeToRewrite(node)) {
            const newText = translateText(text);
            if (newText !== text) {
              window.requestAnimationFrame(() => {
@@ -2915,6 +3033,15 @@ def main():
   } catch(e) {}
 })();
 """
+
+    # ---------------- 注入斜杠命令 (如 /compact) 名字与解释本地化 ----------------
+    slash_target = 'var b8a=({item:a,isSelected:b,setSelected:c,selectAndClose:e})=>{var f=a.getRenderInfo(),g=a.queryMatches;if(!f)return null;var h=f.label,k=f.icon,l=f.description,m=f.sourceLabel;'
+    slash_replacement = 'var b8a=({item:a,isSelected:b,setSelected:c,selectAndClose:e})=>{var f=a.getRenderInfo(),g=a.queryMatches;if(!f)return null;var h=f.label,k=f.icon,l=f.description,m=f.sourceLabel;try{var _cm={"compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"/compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"/goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"/plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"/browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"/schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"/grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"/teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"/learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"},"/boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"}};if(h&&_cm[h.toLowerCase()]){var _target=_cm[h.toLowerCase()];h=_target.n;if(_target.d)l={text:_target.d,rtl:!1};}}catch(_e){}'
+    if slash_target in content:
+        content = content.replace(slash_target, slash_replacement)
+        print("Successfully injected slash command (compact, etc.) label & description localizer!")
+    else:
+        print("[!] Warning: slash_target not found in bundle!")
 
     content = content + "\n" + dom_translator_js
     # ---------------- 注入全局动态 DOM 翻译拦截器 ----------------
