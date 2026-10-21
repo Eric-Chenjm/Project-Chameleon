@@ -62,6 +62,29 @@ PROTECT_PATTERNS = [
      "对象键"),
     (r'((?:\{|,)\s*)(' + _STR_S + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))',
      "对象键"),
+    # 5) Protobuf 枚举反向映射：a[a.UNSPECIFIED = 0] = "UNSPECIFIED" 或 T.Enum[T.Enum.VAL] = "VAL"
+    (r'(\[\s*[A-Za-z0-9_$.]+(?:\.[A-Za-z0-9_]+)?(?:\s*=\s*\d+)?\s*\]\s*=\s*)(' + _STR_D + r')', "Protobuf反向枚举"),
+    (r'(\[\s*[A-Za-z0-9_$.]+(?:\.[A-Za-z0-9_]+)?(?:\s*=\s*\d+)?\s*\]\s*=\s*)(' + _STR_S + r')', "Protobuf反向枚举"),
+    # 6) 核心工具分发函数与 React displayName fallback
+    (r'(\breturn\s*)("browserSubagent"|\'browserSubagent\')(?=\s*;)', "分发返回值"),
+    (r'(\bdisplayName\s*\|\|\s*)("Context"|\'Context\')(?=\s*\))', "React Context 标识"),
+    # 7) 内部路由与分类数组：rgb = ["App", "Jetski Chat", "Regroup Google3 Chats"]
+    (r'(rgb\s*=\s*\[\s*"App"\s*,\s*)(' + _STR_D + r')', "分类路由数组"),
+    (r'(rgb\s*=\s*\[\s*"App"\s*,\s*' + _STR_D + r'\s*,\s*)(' + _STR_D + r')', "分类路由数组"),
+    # 8) 路由分发与跳转传参：su("Shortcuts"), su("Provide Feedback"), su("Account"), k.push(...)
+    (r'(\bsu\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "路由跳转传参"),
+    (r'(\bsu\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "路由跳转传参"),
+    (r'(\bk\.push\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "路由栈传参"),
+    (r'(\bk\.push\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "路由栈传参"),
+    # 9) 设置配置节注册表 p3a 与 Deep Link 映射表 Bxb 的 Map Key 保护
+    (r'(p3a\s*=\s*new\s*Map\s*\(\s*\[\s*\[\s*)(' + _STR_D + r')', "设置Map首Key"),
+    (r'(,\s*\[\s*)("Appearance"|"General"|"Project 4K"|"Browser"|"Account"|"Customizations"|"Notifications")(?=\s*,)', "设置Map配置Key"),
+    (r'(Object\.entries\s*\(\s*\{[\s\S]*?\b(?:Account|Permissions|General|Appearance|Shortcuts)\s*:\s*)(' + _STR_D + r')', "DeepLink值"),
+    # 10) 时间轴步骤坐标映射表 Lmc
+    (r'(,\s*\[\s*)("CHECKPOINT")(?=\s*,\s*\d+\s*\])', "时间轴步骤枚举"),
+    # 11) 项目设置 Redux Reducer 白名单数组
+    (r'(\[\s*)("Project General")(?=\s*,)', "项目设置Reducer白名单"),
+    (r'(,\s*)("Project Folders"|"Project Agent"|"Permissions")(?=\s*[\]\,])', "项目设置Reducer白名单项"),
 ]
 
 _PROTECT_TOKEN = "\u0000CHMPROTECT{0}\u0000"
@@ -359,8 +382,6 @@ def main():
         "Customizations": "自定义扩展",
         "Shortcuts": "键盘快捷键",
         "Workspace Settings": "工作区设置",
-        "Jetski Chat": "对话流配置",
-        "Regroup Google3 Chats": "重组 Google3 会话",
         "Provide Feedback": "提供使用反馈",
         "Open Settings": "打开设置",
         "Close Settings": "关闭设置",
@@ -600,10 +621,8 @@ def main():
         "Child Subagents": "子级子智能体",
         "Child Subagent": "子级子智能体",
         "View child subagents": "查看子级智能体",
-        "BROWSER_SUBAGENT": "浏览器子智能体",
         "BROWSER_SUBAGENT_TRAJECTORY": "浏览器子智能体执行轨迹",
         "Browser Subagent": "浏览器子智能体",
-        "browserSubagent": "浏览器子智能体",
         "Subagent Transcript": "子智能体对话记录",
         "Copy Conversation ID": "复制会话 ID",
         "Missing conversation ID": "缺少会话 ID",
@@ -617,8 +636,6 @@ def main():
         "Waiting for message": "等待消息通知",
         "Canceling": "正在取消",
         "Errored": "运行出错",
-        "ERRORED": "执行出错",
-        "UNSPECIFIED": "未指定状态",
         "Skip browser subagent": "跳过浏览器子智能体",
         "ReusedSubagentID": "复用子智能体 ID",
         "Finalizing transcription...": "正在完成对话转录...",
@@ -1086,7 +1103,6 @@ def main():
         "Terminal commands the agent can execute.": "智能体可以执行的终端命令。",
         "Tool Execution": "工具执行",
         "User cancelled agent execution.": "用户已取消智能体执行。",
-        "CHECKPOINT": "检查点",
         "Checkpoint": "检查点",
         "Restore to Snapshot": "还原至快照",
         "Revert to Snapshot": "回滚到快照",
@@ -1134,7 +1150,6 @@ def main():
         "Network Permissions": "网络访问控制权限",
         "Timed out": "执行超时",
         "Killed": "已强制终止",
-        "INTERRUPTED": "已中断",
         "Terminated": "已终止",
         "Terminals": "终端列表",
         "Terminal & Tooling Permissions": "终端与工具权限",
@@ -2387,7 +2402,6 @@ def main():
     "Application": "应用程序设置",
     "Developer": "开发者调试选项",
     "Project 4K": "项目 4K 增强模式",
-    "Jetski Chat": "对话流配置",
     "Chat Settings": "对话设置",
     "Context Menus": "右键菜单",
     "Execution": "执行策略",
@@ -2445,7 +2459,6 @@ def main():
     "Turbo": "极速全自动模式 (Turbo)",
     "Vetted": "严格审查模式 (Vetted)",
     "Request Review": "请求人工审查",
-    "Regroup Google3 Chats": "重组 Google3 会话",
     "Follow the guide at": "请参考迁移指导文档：",
     "Migrate with Agent": "使用智能体一键迁移",
     "Open Editor Settings": "打开编辑器配置",
@@ -3012,6 +3025,16 @@ def main():
         print("Successfully injected slash command (compact, etc.) label & description localizer!")
     else:
         print("[!] Warning: slash_target not found in bundle!")
+
+    # ---------------- 注入设置侧边栏原生中文 label ----------------
+    zh_ogb = 'var ogb=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Tab",label:"代码补全 (Tab)"},{screen:"Editor",label:"编辑器配置"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
+    # 匹配可能包含英文或已汉化标签的 ogb
+    ogb_pattern = r'var ogb=\[\{screen:"General"\}[\s\S]*?\{screen:"Regroup Google3 Chats"\}\]'
+    if re.search(ogb_pattern, content):
+        content = re.sub(ogb_pattern, zh_ogb, content)
+        print("Successfully injected localized labels into ogb settings array via regex!")
+    else:
+        print("[!] Warning: ogb_pattern not found in bundle!")
 
     content = content + "\n" + dom_translator_js
     # ---------------- 注入全局动态 DOM 翻译拦截器 ----------------
