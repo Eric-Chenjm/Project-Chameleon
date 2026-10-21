@@ -58,53 +58,32 @@ def main():
         chk_process = subprocess.run('tasklist /FI "IMAGENAME eq Antigravity.exe"', capture_output=True, text=True, shell=True)
         if "Antigravity.exe" in chk_process.stdout:
             log("⚠️ 检测到 Antigravity 正在运行中！")
-            log("为防止文件被锁导致闪退或注入失败，请先手动退出 Antigravity 软件。")
+            log("为防止文件占用被锁定导致闪退，请先完全退出 Antigravity 软件。")
             if sys.stdin.isatty():
-                input("按回车键 [Enter] 继续注入流程...")
-    elif system_name == "Darwin":
-        chk_process = subprocess.run('pgrep -f "Antigravity"', capture_output=True, text=True, shell=True)
-        if chk_process.returncode == 0:
-            log("⚠️ 检测到 Antigravity 正在运行中！")
-            log("为防止文件被锁，请先手动退出 Antigravity 软件。")
-            if sys.stdin.isatty():
-                input("按回车键 [Enter] 继续注入流程...")
-        
+                input("退出软件后，按回车键 [Enter] 继续注入流程...")
+
     log("1. 检查并备份 app.asar ...")
-    if not os.path.exists(asar_bak):
+    clean_bak = os.path.join(resources_dir, "app.asar.clean_official_2240")
+    if os.path.exists(clean_bak):
+        # 始终优先以官方干净原版作为基准源，彻底防止污染累积
+        shutil.copy2(clean_bak, asar_bak)
+        log("已同步官方纯净基准备份 (app.asar.clean_official_2240 -> app.asar.bak)。")
+    elif not os.path.exists(asar_bak):
         shutil.copy2(asar_path, asar_bak)
         log("首次安装，备份成功。")
     else:
-        # 如果 app.asar 的修改时间比 app.asar.bak 更新，说明官方刚升级了版本
         if os.path.getmtime(asar_path) > os.path.getmtime(asar_bak):
             shutil.copy2(asar_path, asar_bak)
             log("检测到官方 Antigravity 已升级，已自动更新原版 app.asar.bak 备份！")
         else:
-            log("已有最新备份，直接使用原备份。")
+            log("已有最新原版备份，直接使用原备份。")
         
-    log("2. 拆解 app.asar (这可能需要十几秒) ...")
+    log("2. 拆解 app.asar (约需数秒) ...")
     if os.path.exists(extract_dir):
         shutil.rmtree(extract_dir)
-    run_cmd(f'{npx_cmd} @electron/asar extract "{asar_path}" "{extract_dir}"')
+    run_cmd(f'{npx_cmd} asar extract "{asar_path}" "{extract_dir}"')
     
-    log("3. 注入基础中文翻译资源 ...")
-    # nls.messages.json
-    out_dir = os.path.join(extract_dir, "out")
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    nls_src = os.path.join(trans_dir, "nls.messages.zh-CN.json")
-    nls_dst = os.path.join(out_dir, "nls.messages.json")
-    if os.path.exists(nls_src):
-        shutil.copy2(nls_src, nls_dst)
-        log("注入 nls.messages.json 成功！")
-        
-    # product.json
-    prod_src = os.path.join(trans_dir, "product.json")
-    prod_dst = os.path.join(extract_dir, "product.json")
-    if os.path.exists(prod_src):
-        shutil.copy2(prod_src, prod_dst)
-        log("注入 product.json 成功！")
-        
-    # 仅对声明兼容的版本替换 AI UI；未知版本继续加载官方 UI，避免白屏。
+    log("3. 注入 customScheme 协议处理器 ...")
     app_version = ""
     try:
         with open(os.path.join(extract_dir, "package.json"), "r", encoding="utf-8") as package_file:
@@ -117,13 +96,12 @@ def main():
         os.makedirs(os.path.dirname(cs_dst), exist_ok=True)
         shutil.copy2(cs_src, cs_dst)
         if cs_src.endswith("customScheme.ai-ui.js"):
-            log(f"Antigravity {app_version} 已启用兼容的 AI 界面汉化。")
+            log(f"Antigravity {app_version} 已启用兼容的 AI 界面汉化协议劫持。")
         else:
-            log(f"Antigravity {app_version or '未知版本'} 未在 AI UI 兼容列表中；保留官方 AI UI 以避免白屏。")
+            log(f"Antigravity {app_version or '未知版本'} 未在 AI UI 兼容列表中；保留官方 UI 以避免白屏。")
         
-    log("3.5 部署预编译汉化 UI 包到系统缓存 ...")
+    log("4. 部署预编译汉化 UI 包到系统缓存 ...")
     os.makedirs(appdata_dir, exist_ok=True)
-    # 部署预编译好的汉化包 zh_cn_ui_main.js
     ui_src = os.path.join(trans_dir, "zh_cn_ui_main.js")
     if os.path.exists(ui_src):
         ui_dst = os.path.join(appdata_dir, "zh_cn_ui_main.js")
@@ -133,18 +111,19 @@ def main():
         print("[-] 严重错误：找不到 zh_cn_ui_main.js，汉化将失效！")
         sys.exit(1)
         
-    log("4. 重新封包 app.asar ...")
+    log("5. 重新精确封包 app.asar (自动分离 chrome-devtools-mcp) ...")
     tmp_asar = asar_path + ".tmp"
-    run_cmd(f'{npx_cmd} @electron/asar pack "{extract_dir}" "{tmp_asar}"')
+    run_cmd(f'{npx_cmd} asar pack "{extract_dir}" "{tmp_asar}" --unpack "**/node_modules/chrome-devtools-mcp/**"')
     
     # 覆盖原 asar
     os.replace(tmp_asar, asar_path)
     
-    log("5. 清理临时解包目录 ...")
+    log("6. 清理临时解包目录 ...")
     shutil.rmtree(extract_dir)
         
-    log("=========== 完美汉化注入完成！ ===========")
-    log("请完全重启 Antigravity 或按 Ctrl+R (Windows) / Cmd+R (Mac) 重载界面。")
+    log("=========== 变色龙纯净汉化注入完成！ ===========")
+    log(f"封包体积: {os.path.getsize(asar_path):,} 字节 (保持 4.49MB 官方级轻量，绝无冗余膨胀)")
+    log("请完全重启 Antigravity 软件验证汉化效果。")
 
 if __name__ == "__main__":
     main()

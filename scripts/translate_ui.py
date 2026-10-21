@@ -305,7 +305,6 @@ def main():
         "Inline Diff": "行内代码差异",
         "Stacked Diff": "堆叠式差异视图",
         "Copy path": "复制路径",
-        "Cut": "剪切",
         "Paste": "粘贴",
         "Paste code here": "在此粘贴代码",
         "Paste auth code": "粘贴授权凭据",
@@ -356,8 +355,6 @@ def main():
         "Block all browser JavaScript execution.": "禁止所有浏览器端 JavaScript 脚本执行。",
         "Browser Javascript Execution Policy": "浏览器 JavaScript 脚本执行策略",
         "Application": "应用程序设置",
-        "Skin": "界面形态",
-        "Tab": "代码补全 (Tab)",
         "Browser": "内置浏览器",
         "Customizations": "自定义扩展",
         "Shortcuts": "键盘快捷键",
@@ -513,12 +510,9 @@ def main():
         "MCP Servers Disabled": "MCP 服务器已禁用",
         "No MCP servers found for ": "未找到匹配的 MCP 服务器: ",
         "No MCP servers installed": "未安装任何 MCP 服务器",
-        "General": "常规设置",
         "Account": "账户信息",
         "Appearance": "外观与主题",
-        "Models": "模型管理",
         "Permissions": "安全与权限",
-        "Editor": "编辑器配置",
         "Notifications": "通知与提醒",
         "Developer": "开发者调试选项",
         "Project General": "项目常规设置",
@@ -538,7 +532,6 @@ def main():
         "Google3 projects are deprecated. Learn more": "Google3 项目已弃用。了解更多",
         "Permission Preset": "权限策略预设",
         "Custom": "自定义策略",
-        "Default": "标准默认模式 (Default)",
         "Request Review": "请求人工审查",
         "Vetted (Preview)": "安全审查模式 (预览)",
         "Auto (Preview)": "自动决策模式 (预览)",
@@ -555,7 +548,6 @@ def main():
         "Require Review": "需要人工评审",
         "Always Ask": "每次均请求确认",
         "Allow": "允许执行",
-        "Deny": "拒绝",
         "Plan Review Policy": "规划审查策略",
         "Artifact Review Policy": "富交互产物评审策略",
         "Whether the agent asks you to review its documents.": "智能体是否就其生成的文档向您请求评审。",
@@ -568,7 +560,6 @@ def main():
         "File Writes": "文件写入",
         "Allow/deny agent read access to specific URLs or domains.": "允许或阻止智能体访问特定的网络 URL 或域名。",
         "Allow/deny specific terminal commands.": "精细化配置特定终端命令的允许/阻止规则。",
-        "Plan": "订阅套餐方案",
         "Your Plan: ": "当前套餐：",
         "Upgrade": "升级套餐",
         "Manage": "管理方案",
@@ -578,7 +569,6 @@ def main():
         "Insufficient AI Credits": "AI 信用点余额不足",
         "Weekly Limit": "每周用量上限",
         "Five Hour Limit": "5 小时速率限制",
-        "Back": "返回上一级",
         "Disabled by organization policy": "受组织安全策略限制，此项已被禁用",
         "This setting is managed by your organization.": "此设置项由您所在的组织机构统一配置与管理。",
         "This setting cannot be changed while strict mode is enabled.": "严格模式 (Strict Mode) 已开启，该设置项暂时锁定无法更改。",
@@ -626,11 +616,8 @@ def main():
         "Waiting for dependents": "等待依赖项完成",
         "Waiting for message": "等待消息通知",
         "Canceling": "正在取消",
-        "CANCELING": "正在取消",
         "Errored": "运行出错",
         "ERRORED": "执行出错",
-        "RUNNING": "运行中",
-        "IDLE": "待命 (空闲)",
         "UNSPECIFIED": "未指定状态",
         "Skip browser subagent": "跳过浏览器子智能体",
         "ReusedSubagentID": "复用子智能体 ID",
@@ -741,7 +728,6 @@ def main():
         "The background color of unchanged blocks in the diff editor.": "Diff 编辑器中未变更代码块的背景颜色。",
         "The foreground color of unchanged blocks in the diff editor.": "Diff 编辑器中未变更代码块的前景颜色。",
         "The background color of unchanged code in the diff editor.": "差异编辑器中未修改代码的背景色。",
-        "Discard": "放弃更改",
         "Discard changes": "放弃更改",
         "Discard unstaged changes": "放弃未暂存的更改",
         "Discard hunk": "放弃此代码块更改",
@@ -786,7 +772,6 @@ def main():
         "Compare Selected": "比较已选项目",
         "Compare with Selected": "与已选项目比较",
         "Open to the Side": "在侧边打开",
-        "Save": "保存",
         "Save All": "全部保存",
         "Close All Editors": "关闭所有编辑器",
         "Keep Open": "保持打开",
@@ -837,7 +822,6 @@ def main():
         "Outside of Folders File Access Policy": "工作区文件夹外文件访问策略",
         "Configure GitHub access policies.": "配置 GitHub 平台访问安全策略。",
         "Settings": "系统设置",
-        "App": "应用设置",
         "Terminal": "终端",
         "Security": "安全",
         "Network": "网络",
@@ -867,7 +851,6 @@ def main():
         "Execution Policy": "执行安全策略",
         "Full Machine": "宿主机直通模式 (Full Machine)",
         "Vetted": "严格审查模式 (Vetted)",
-        "Auto": "智能自动研判 (Auto)",
         "Permissive": "宽松放行模式 (Permissive)",
         "Require approval for commands": "执行系统命令前强制弹窗审批",
         "Allow agent to run commands without prompting": "允许智能体直接静默执行命令（不弹出确认）",
@@ -999,7 +982,6 @@ def main():
         "Compacting context": "正在压缩对话上下文...",
         "Context compaction": "上下文自动压缩",
         "Context compressed": "上下文已压缩",
-        "Working": "正在处理",
         "Generating response": "正在生成回复...",
         "Streaming response": "正在流式输出...",
         "History truncated": "历史记录已截断",
@@ -1128,7 +1110,6 @@ def main():
         "Run (unsandboxed)": "在沙箱外运行",
         "Site Allowlist": "网站允许列表",
         "This command ran in the sandbox.": "此命令已在隔离沙箱中运行。",
-        "Fill": "撑满 / 自适应宽度",
         "Configure the default width of tables.": "配置对话与文档中表格的呈现宽度。",
         "Table Width": "表格显示宽度",
         "Switch to Dark Mode": "切换至深色模式",
@@ -1143,7 +1124,6 @@ def main():
         "CitC Settings": "CitC 云端工作区设置",
         "Editor Settings": "编辑器参数设置",
         "Best of N": "多候选探索 (Best of N)",
-        "Labs": "实验特性",
         "Redirect blocked: unsafe protocol": "重定向已拦截：不安全协议",
         "Blocked by organization policy": "已被组织安全策略拦截",
         "Blocked, needs input": "已拦截，等待用户授权",
@@ -1272,7 +1252,6 @@ def main():
         "Stop all subagents": "停止所有子智能体",
         "Expand subagents": "展开子智能体",
         "Collapse subagents": "折叠子智能体",
-        "Child Subagents (": "子级智能体 (",
         "Agent response": "智能体响应",
         "Agent permissions preset selector": "智能体权限预设选择器",
         "Agent is analyzing videos": "智能体正在分析视频",
@@ -1898,7 +1877,6 @@ def main():
         "Navigation": "导航面板",
         "Custom Agents": "自定义智能体",
         "Suggestions": "智能建议",
-        "Context": "上下文感知",
         "Advanced Settings": "高级设置",
         "Color Theme": "颜色主题",
         "File Icon Theme": "文件图标主题",
@@ -1944,7 +1922,6 @@ def main():
         "Message subagent, @ to mention": "给子智能体发送消息，使用 @ 提及",
         "Ask anything, @ to mention": "向智能体提问，使用 @ 提及",
         ", / for actions": "，使用 / 唤出操作指令",
-        "(subagent)": "(子智能体)",
         "Subagent task completed": "子智能体任务已完成",
         "Subagent failed": "子智能体执行失败",
         "Failed to submit comment. Please try again.": "提交批注失败，请重试。",
@@ -2177,24 +2154,19 @@ def main():
 // 注入动态 DOM 汉化引擎 (针对 React 深度封装无法静态替换的长句与危险短词)
 (function() {
   const dynamicDict = {
-    "Fill": "撑满 / 自适应宽度",
     "Subagent": "子智能体",
     "Subagents": "子智能体",
     "Agent Team": "智能体团队",
-    "General": "常规设置",
     "Account": "账户信息",
     "Appearance": "外观与主题",
-    "Models": "模型管理",
     "Customizations": "自定义扩展",
     "Browser": "内置浏览器",
-    "App": "应用设置",
     "Conversations": "历史会话",
     "Always Ask": "每次均请求确认",
     "Require Review": "需要人工评审",
     "Custom": "自定义策略",
     "Allow": "允许执行",
     "Turbo Mode": "急速模式",
-    "Default": "标准默认模式 (Default)",
     "Full machine": "宿主机直通模式 (Full Machine)",
     "Turbo mode": "Turbo 极速全自动模式",
     "Disables all safety barriers for maximal iteration velocity.": "禁用所有安全屏障以获得最快的迭代速度。",
@@ -2212,7 +2184,6 @@ def main():
     "Weekly Limit": "每周用量上限",
     "Five Hour Limit": "5 小时速率限制",
     "Claude and GPT models": "Claude 与 GPT 跨架构模型配额",
-    "Plan": "订阅套餐方案",
     "Your Plan: Google AI Pro": "当前订阅方案: Google AI Pro",
     "You can upgrade to a Google AI Ultra plan to receive higher rate limits.": "您可以升级到 Google AI Ultra 套餐以获得更高的速率限制。",
     "Model Credits": "模型信用点余额",
@@ -2256,7 +2227,6 @@ def main():
     "About": "关于",
     "Clear Chat": "清除对话",
     "Delete Chat": "删除对话",
-    "Back": "返回",
     "Browser Actuation Permissions": "浏览器执行权限",
     "Terminal Command Permissions": "终端命令规则",
     "Network Access Permissions": "网络访问规则",
@@ -2266,7 +2236,6 @@ def main():
     "ask": "询问",
     "deny": "拒绝",
     "Ask": "询问",
-    "Deny": "拒绝",
     "Add": "添加",
     "Notifications": "通知与提醒",
     "Advanced Settings": "高级设置",
@@ -2418,8 +2387,6 @@ def main():
     "Application": "应用程序设置",
     "Developer": "开发者调试选项",
     "Project 4K": "项目 4K 增强模式",
-    "Editor": "编辑器配置",
-    "Tab": "代码补全 (Tab)",
     "Jetski Chat": "对话流配置",
     "Chat Settings": "对话设置",
     "Context Menus": "右键菜单",
@@ -2432,7 +2399,6 @@ def main():
     "Advanced": "高级选项",
     "Custom Agents": "自定义智能体",
     "Suggestions": "智能建议",
-    "Context": "上下文感知",
     "Updater": "版本更新",
     "Color Theme": "颜色主题",
     "File Icon Theme": "文件图标主题",
@@ -2510,7 +2476,6 @@ def main():
     "Stop Subagent": "停止子智能体",
     "Cannot send message to subagent.": "无法向子智能体发送消息。",
     "Failed to parse Subagents arg JSON:": "解析子智能体参数 JSON 失败：",
-    "(subagent)": "(子智能体)",
     "Waiting for input": "等待用户输入",
     "Waiting for message": "等待消息通知",
     "Waiting for dependents": "等待依赖项完成",
@@ -2532,7 +2497,6 @@ def main():
     "Artifact image": "产物图像",
     "Failed to reject execution": "拒绝执行操作失败",
     "Compacting": "正在压缩上下文",
-    "Working": "正在处理",
     "Streaming Generation": "流式生成",
     "Context Window": "上下文窗口",
     "Compaction not supported for": "不支持上下文压缩：",
@@ -2562,7 +2526,6 @@ def main():
     "View File": "查看文件",
     "Show Whitespace Changes": "显示空白字符变动",
     "Hide Whitespace Changes": "隐藏空白字符变动",
-    "Discard": "放弃更改",
     "Discard staged changes": "放弃已暂存的更改",
     "Discard File Changes": "放弃文件更改",
     "Discard file changes": "放弃文件更改",
@@ -2649,7 +2612,6 @@ def main():
     "Current workspace": "当前工作区",
     "Build with one agent or a team": "使用单个智能体或团队进行构建",
     "Review plans and walkthroughs": "审查规划与演练说明",
-    "Child Subagents (": "子级智能体 (",
     "Collapse subagents": "折叠子智能体",
     "Expand subagents": "展开子智能体",
     "Stop subagent": "停止子智能体",
@@ -2783,7 +2745,6 @@ def main():
     "Google3 projects are deprecated": "Google3 项目已弃用",
     "Dismiss": "忽略此提示",
     "Security Presets": "安全预设方案",
-    "Auto": "智能自动研判 (Auto)",
     "Refresh quota and credits data": "刷新配额与信用点使用数据",
     "No quota information available.": "暂无当前账户的配额统计信息。",
     "Enable Overages": "开启超额抵扣",
@@ -2928,9 +2889,15 @@ def main():
         const cls = (el.className || '').toString().toLowerCase();
         const id = (el.id || '').toString().toLowerCase();
         const tagName = (el.tagName || '').toLowerCase();
+        // 任何处于可编辑、代码、终端、会话、历史、正文区域的节点一律豁免
         if (
+          el.isContentEditable ||
           tagName === 'textarea' ||
           tagName === 'input' ||
+          tagName === 'pre' ||
+          tagName === 'code' ||
+          tagName === 'script' ||
+          tagName === 'style' ||
           cls.includes('monaco') ||
           cls.includes('chat') ||
           cls.includes('conversation') ||
@@ -2947,9 +2914,12 @@ def main():
           cls.includes('terminal') ||
           cls.includes('xterm') ||
           cls.includes('cm-') ||
+          cls.includes('step') ||
           id.includes('chat') ||
           id.includes('conversation') ||
-          id.includes('cascade')
+          id.includes('cascade') ||
+          id.includes('transcript') ||
+          id.includes('history')
         ) {
           return true;
         }
