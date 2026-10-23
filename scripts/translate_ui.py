@@ -37,14 +37,29 @@ _PROTECT_KEYS = (
     "topic|targetScreen|activeScreen|modalType|home|unsandboxed|binding|shortcut|command|when|"
     "scheme|protocol|extension|package|module|file|path|convoState|itemType|nodeType|blockType|"
     "entryType|viewType|paneType|argName|param|option|flag|groupKey|displayName|stateMachine|"
-    "conversationId|cascadeId|sectionId|screenId|viewId|tabId|paneId|itemId"
+    "conversationId|cascadeId|sectionId|screenId|viewId|tabId|paneId|itemId|addr|preset"
 )
 
-# 每条规则 = (正则, 说明)。正则必须含两个分组：
-#   分组 1 = 需要原样保留的前缀；分组 2 = 需要保护的字符串字面量（含引号）。
-# 字符串内容里禁止出现 ';'，避免正则跨越代码边界把真实代码吞进去。
 _STR_D = r'"[^"\\\n;]{0,120}"'
 _STR_S = r"'[^'\\\n;]{0,120}'"
+_STR_ITEM = r'\s*(?:"[^"\\\n]{0,80}"|\x00CHMPROTECT\d+\x00)\s*'
+
+# 整块保护规则（优先执行，不依赖压缩变量名）
+BLOCK_PROTECT_PATTERNS = [
+    # 1) Object.entries({...}) 映射块（含 DeepLink 路由映射与 TS 数字反向枚举映射）
+    (r'Object\.entries\s*\(\s*\{[^{}]{0,4000}\}\s*\)', "Object.entries映射块"),
+    # 2) 成员判断数组：["Project General","Project Folders",...].includes(x)
+    (r'\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*\.\s*(?:includes|indexOf)\s*\(', "成员判断数组"),
+    # 3) Set 集合：new Set(["a","b",...])
+    (r'new\s*Set\s*\(\s*\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*\)', "Set集合"),
+    # 4) 路由与分类列表数组：x=["Tab","Editor"]、x=["App","Jetski Chat",...]、["Code Search","Conversations","Commands"]
+    (r'\b[\w$]+\s*=\s*\[\s*"(?:App|Tab|General)"\s*(?:,' + _STR_ITEM + r')*\]', "路由列表数组"),
+    (r'\[\s*"(?:Code Search|Conversations)"\s*(?:,' + _STR_ITEM + r')+\]', "搜索分类数组"),
+    # 5) 分号分隔路由串："General;...;Developer".split(";")
+    (r'"[^"\\\n]{0,400}"(?=\s*\.split\s*\(\s*";"\s*\))', "分号路由串"),
+    # 6) Monaco 键盘码映射表行：[1,82,"Delete",20,"Delete",46,"VK_DELETE","",""]
+    (r'\[\s*1\s*,\s*\d+\s*,\s*"[^"]*"\s*,\s*\d+\s*,\s*"[^"]*"\s*,\s*\d+\s*,\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"[^"]*"\s*\]', "键盘码映射表"),
+]
 
 PROTECT_PATTERNS = [
     # 1) 与后端 / 键盘事件 / 存储值做比较：x === "RUNNING"、a.key === "Tab"
@@ -54,33 +69,39 @@ PROTECT_PATTERNS = [
     (r'(\bcase\s*)(' + _STR_D + r')(?=\s*:)', "switch case"),
     (r'(\bcase\s*)(' + _STR_S + r')(?=\s*:)', "switch case"),
     # 3) 枚举型属性值：type:"subagent"、screen:"General"、group:"Plugins"
-    #    要求前面是 { 或 , 且键名全小写，避免把界面文案里的 "app view: " 当成属性键
     (r'([{,]\s*(?:' + _PROTECT_KEYS + r')\s*:\s*)(' + _STR_D + r')', "枚举属性"),
     (r'([{,]\s*(?:' + _PROTECT_KEYS + r')\s*:\s*)(' + _STR_S + r')', "枚举属性"),
+    # 3.1) 点属性赋值：a.activeScreen="Project General"、x.type="subagent"
+    (r'(\.(?:' + _PROTECT_KEYS + r')\s*=\s*)(' + _STR_D + r')', "点属性赋值"),
+    (r'(\.(?:' + _PROTECT_KEYS + r')\s*=\s*)(' + _STR_S + r')', "点属性赋值"),
+    # 3.2) HTML data-* 属性：data-screen:"Developer"、data-testid:"..."
+    (r'("(?:data-screen|data-testid|data-tooltip-id|data-state|data-value|data-key|data-mode)"\s*:\s*)(' + _STR_D + r')', "data属性"),
     # 4) 对象键 / 映射表键（键本身用于查找，值才是文案）
-    (r'((?:\{|,)\s*)(' + _STR_D + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))',
-     "对象键"),
-    (r'((?:\{|,)\s*)(' + _STR_S + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))',
-     "对象键"),
-    # 5) Protobuf 枚举反向映射：a[a.UNSPECIFIED = 0] = "UNSPECIFIED" 或 T.Enum[T.Enum.VAL] = "VAL"
+    (r'((?:\{|,)\s*)(' + _STR_D + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))', "对象键"),
+    (r'((?:\{|,)\s*)(' + _STR_S + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))', "对象键"),
+    # 5) Protobuf 枚举反向映射：a[a.UNSPECIFIED = 0] = "UNSPECIFIED"
     (r'(\[\s*[A-Za-z0-9_$.]+(?:\.[A-Za-z0-9_]+)?(?:\s*=\s*\d+)?\s*\]\s*=\s*)(' + _STR_D + r')', "Protobuf反向枚举"),
     (r'(\[\s*[A-Za-z0-9_$.]+(?:\.[A-Za-z0-9_]+)?(?:\s*=\s*\d+)?\s*\]\s*=\s*)(' + _STR_S + r')', "Protobuf反向枚举"),
     # 6) 核心工具分发函数与 React displayName fallback
-    (r'(\breturn\s*)("browserSubagent"|\'browserSubagent\')(?=\s*;)', "分发返回值"),
-    (r'(\bdisplayName\s*\|\|\s*)("Context"|\'Context\')(?=\s*\))', "React Context 标识"),
-    # 7) 内部路由与分类数组：rgb = ["App", "Jetski Chat", "Regroup Google3 Chats"]
-    (r'(rgb\s*=\s*\[\s*"App"\s*,\s*)(' + _STR_D + r')', "分类路由数组"),
-    (r'(rgb\s*=\s*\[\s*"App"\s*,\s*' + _STR_D + r'\s*,\s*)(' + _STR_D + r')', "分类路由数组"),
-    # 8) 路由分发与跳转传参：su("Shortcuts"), su("Provide Feedback"), su("Account"), k.push(...)
-    (r'(\bsu\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "路由跳转传参"),
-    (r'(\bsu\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "路由跳转传参"),
-    (r'(\bk\.push\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "路由栈传参"),
-    (r'(\bk\.push\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "路由栈传参"),
-    # 9) 设置配置节注册表 p3a 与 Deep Link 映射表 Bxb 的 Map Key 保护
-    (r'(p3a\s*=\s*new\s*Map\s*\(\s*\[\s*\[\s*)(' + _STR_D + r')', "设置Map首Key"),
+    (r"""(\breturn\s*)("browserSubagent"|'browserSubagent')(?=\s*;)""", "分发返回值"),
+    (r"""(\bdisplayName\s*\|\|\s*)("Context"|'Context')(?=\s*\))""", "React Context 标识"),
+    # 7) 内部路由与分类数组
+    (r'(\b[\w$]+\s*=\s*\[\s*"App"\s*,\s*)(' + _STR_D + r')', "分类路由数组"),
+    (r'(\b[\w$]+\s*=\s*\[\s*"App"\s*,\s*' + _STR_D + r'\s*,\s*)(' + _STR_D + r')', "分类路由数组"),
+    # 8) 路由栈传参 k.push("Account") / g.push("subagents")
+    (r'(\b[\w$]+\.push\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "数组push标识符"),
+    (r'(\b[\w$]+\.push\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "数组push标识符"),
+    # 9) 设置配置节注册表 Map Key 保护
+    (r'(new\s*Map\s*\(\s*\[\s*\[\s*)(' + _STR_D + r')(?=\s*,\s*\{\s*sections\s*:)', "设置Map首Key"),
+    (r'(\]\s*,\s*\[\s*)(' + _STR_D + r')(?=\s*,\s*\{\s*sections\s*:)', "设置Map配置Key"),
     (r'(,\s*\[\s*)("Appearance"|"General"|"Project 4K"|"Browser"|"Account"|"Customizations"|"Notifications")(?=\s*,)', "设置Map配置Key"),
-    (r'(Object\.entries\s*\(\s*\{[\s\S]*?\b(?:Account|Permissions|General|Appearance|Shortcuts)\s*:\s*)(' + _STR_D + r')', "DeepLink值"),
-    # 10) 时间轴步骤坐标映射表 Lmc
+    # 9.1) 查找/集合/存储/编码类调用的实参一律视为程序标识
+    (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_D + r')(?=\s*[,)])', "查找调用实参"),
+    (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_S + r')(?=\s*[,)])', "查找调用实参"),
+    (r'(\bencodeURIComponent\(\s*)(' + _STR_D + r')(?=\s*\))', "URL编码实参"),
+    (r'(\bFe\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*\))', "字段提取实参"),
+    (r'(\bLG\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*,)', "快捷键绑定实参"),
+    # 10) 时间轴步骤坐标映射表
     (r'(,\s*\[\s*)("CHECKPOINT")(?=\s*,\s*\d+\s*\])', "时间轴步骤枚举"),
     # 11) 项目设置 Redux Reducer 白名单数组
     (r'(\[\s*)("Project General")(?=\s*,)', "项目设置Reducer白名单"),
@@ -90,12 +111,39 @@ PROTECT_PATTERNS = [
 _PROTECT_TOKEN = "\u0000CHMPROTECT{0}\u0000"
 
 
+def detect_action_aliases(content):
+    """识别 var mu=qu.setActiveScreen 这类 action creator 别名（压缩名每版都会变）。"""
+    names = set()
+    for m in re.finditer(r'(?<![\w$.])([\w$]{1,6})\s*=\s*[\w$]{1,6}\.(setActiveScreen|navigateToWorkspaceScreen|navigateToProjectScreen)\b', content):
+        names.add(m.group(1))
+    print(f"Detected action aliases: {sorted(names)}")
+    return sorted(names)
+
+
 def protect_code_positions(content):
-    """把处于代码逻辑位置的字符串字面量替换为占位符，返回 (内容, 占位符表)。"""
+    """把处于代码逻辑位置的字符串字面量替换为占位符，返回 (内容, 占位符表, 统计)。"""
     placeholders = {}
     counter = [0]
     stats = {}
 
+    # 第一步：先执行整块保护（Object.entries、Set、includes 数组、键盘码表等）
+    def _block_sub(label):
+        def _sub(match):
+            block = match.group(0)
+            def _lit(m2):
+                idx = counter[0]
+                counter[0] += 1
+                token = _PROTECT_TOKEN.format(idx)
+                placeholders[token] = m2.group(0)
+                stats[label] = stats.get(label, 0) + 1
+                return token
+            return re.sub(_STR_D + "|" + _STR_S, _lit, block)
+        return _sub
+
+    for pattern, label in BLOCK_PROTECT_PATTERNS:
+        content = re.sub(pattern, _block_sub(label), content)
+
+    # 第二步：动态识别 Redux 路由跳转 action 别名并执行单点模式保护
     def _make_sub(label):
         def _sub(match):
             idx = counter[0]
@@ -106,8 +154,15 @@ def protect_code_positions(content):
             return match.group(1) + token
         return _sub
 
-    for pattern, label in PROTECT_PATTERNS:
+    alias_patterns = []
+    for alias in detect_action_aliases(content):
+        esc = re.escape(alias)
+        alias_patterns.append((r'((?<![\w$.])' + esc + r'\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "路由跳转传参"))
+        alias_patterns.append((r'((?<![\w$.])' + esc + r'\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "路由跳转传参"))
+
+    for pattern, label in PROTECT_PATTERNS + alias_patterns:
         content = re.sub(pattern, _make_sub(label), content)
+
     return content, placeholders, stats
 
 
@@ -125,7 +180,7 @@ def apply_string_translation(content, original, translated):
         return apply_safe_literal_replacement(content, original, translated)
 
     # 2. 显式带有冒号或属性键的代码片段（例如 label:"New Conversation" 或 title:"Account"）
-    if any(k in original for k in ['label:', 'title:', 'aria-label:']):
+    if any(k in original for k in ['label:', 'title:', 'aria-label:', 'text:', 'placeholder:', 'description:', 'tooltip:']):
         if original in content:
             return content.replace(original, translated), True
         alt_o = original.replace('"', "'")
@@ -135,6 +190,8 @@ def apply_string_translation(content, original, translated):
         return content, False
 
     # 3. 严格字面量安全替换：必须匹配被引号包裹的形式，严禁做裸词子串替换
+    if original not in content:
+        return content, False
     src_quoted_d = f'"{original}"'
     dst_quoted_d = f'"{translated}"'
     src_quoted_s = f"'{original}'"
@@ -328,7 +385,6 @@ def main():
         "Inline Diff": "行内代码差异",
         "Stacked Diff": "堆叠式差异视图",
         "Copy path": "复制路径",
-        "Paste": "粘贴",
         "Paste code here": "在此粘贴代码",
         "Paste auth code": "粘贴授权凭据",
         "Rename": "重命名",
@@ -378,11 +434,7 @@ def main():
         "Block all browser JavaScript execution.": "禁止所有浏览器端 JavaScript 脚本执行。",
         "Browser Javascript Execution Policy": "浏览器 JavaScript 脚本执行策略",
         "Application": "应用程序设置",
-        "Browser": "内置浏览器",
-        "Customizations": "自定义扩展",
-        "Shortcuts": "键盘快捷键",
         "Workspace Settings": "工作区设置",
-        "Provide Feedback": "提供使用反馈",
         "Open Settings": "打开设置",
         "Close Settings": "关闭设置",
         "Open Preferences": "打开偏好设置",
@@ -403,8 +455,6 @@ def main():
         "Background": "背景色",
         "Foreground": "前景色",
         "Accent": "强调色",
-        "Default Light": "默认浅色",
-        "Default Dark": "默认深色",
         "Tokyo Night": "东京之夜 (Tokyo Night)",
         "Dracula": "德古拉 (Dracula)",
         "Vesper": "Vesper 暮光",
@@ -426,7 +476,6 @@ def main():
         "Security Preset": "安全策略预设",
         "Full access": "系统完全访问权限 (Full Access)",
         "Full machine": "宿主机直通模式 (Full Machine)",
-        "Turbo": "极速全自动模式 (Turbo)",
         "Turbo mode": "Turbo 极速全自动模式",
         "Workspace only": "仅限工作区范围",
         "Always ask": "始终弹窗审批确认",
@@ -532,13 +581,6 @@ def main():
         "No MCP servers found for ": "未找到匹配的 MCP 服务器: ",
         "No MCP servers installed": "未安装任何 MCP 服务器",
         "Account": "账户信息",
-        "Appearance": "外观与主题",
-        "Permissions": "安全与权限",
-        "Notifications": "通知与提醒",
-        "Developer": "开发者调试选项",
-        "Project General": "项目常规设置",
-        "Project Folders": "项目关联目录",
-        "Project Agent": "项目智能体配置",
         "System": "跟随系统外观",
         "Light": "浅色模式 (Light)",
         "Dark": "深色模式 (Dark)",
@@ -776,7 +818,6 @@ def main():
         "Rename File": "重命名文件",
         "Rename Folder": "重命名文件夹",
         "Rename Symbol": "重命名符号",
-        "Delete": "删除",
         "Delete File": "删除文件",
         "Delete Folder": "删除文件夹",
         "Move to Trash": "移至回收站",
@@ -841,7 +882,6 @@ def main():
         "Settings": "系统设置",
         "Terminal": "终端",
         "Security": "安全",
-        "Network": "网络",
         "Advanced": "高级选项",
         "Chat Settings": "对话设置",
         "Display Settings": "显示设置",
@@ -937,7 +977,6 @@ def main():
         "Teammates": "团队成员",
         "Reviewer Agent": "审查智能体",
         "subagent": "子智能体",
-        "subagents": "子智能体",
         "Child subagent": "子级智能体",
         "Child subagents": "子级智能体",
         "Invoked subagent:": "已调用子智能体:",
@@ -1083,7 +1122,6 @@ def main():
         "\"Keyboard Shortcuts\"": "\"快捷键\"",
         "\"Keyboard shortcuts for quick navigation and control.\"": "\"用于快速导航和控制的键盘快捷键。\"",
         "\"Open Keyboard Shortcuts\"": "\"打开快捷键列表\"",
-        "\"Shortcuts\"": "\"快捷键\"",
         "\"Terminal Command Auto Execution\"": "\"终端命令自动执行\"",
         "Agent execution failed.": "智能体执行失败。",
         "Agent needs permission to execute JavaScript": "智能体需要执行 JavaScript 的权限",
@@ -1475,8 +1513,6 @@ def main():
         "\"Light Theme\"": "\"浅色主题\"",
         "\"Dark Theme\"": "\"深色主题\"",
         "\"Preset\"": "\"预设\"",
-        "\"Default Light\"": "\"默认浅色\"",
-        "\"Default Dark\"": "\"默认深色\"",
         "\"Background\"": "\"背景\"",
         "\"Foreground\"": "\"前景\"",
         "\"Accent\"": "\"强调色\"",
@@ -1502,7 +1538,6 @@ def main():
         "\"Manage application settings.\"": "\"管理应用设置。\"",
         "\"Configure settings for Best of N mode.\"": "\"配置 Best of N 模式的相关设置。\"",
         "\"Best of N Settings\"": "\"Best of N 设置\"",
-        "\"Provide Feedback\"": "\"提供反馈\"",
         "\"Notification Settings\"": "\"通知设置\"",
         "\"Open System Preferences\"": "\"打开系统设置\"",
         "\"RECOMMENDED\"": "\"推荐\"",
@@ -1536,7 +1571,6 @@ def main():
         "\"Workspaces\"": "\"工作区\"",
         "\"Show all\"": "\"显示全部\"",
         "\"Theme\"": "\"主题\"",
-        "\"Permissions\"": "\"权限\"",
         "\"No project selected or project management not available.\"": "\"未选择项目，或项目管理不可用。\"",
         "\"Open Settings\"": "\"打开设置\"",
         "\"No agents running\"": "\"当前没有运行中的智能体\"",
@@ -1552,7 +1586,6 @@ def main():
         "\"MCP Tools\"": "\"MCP 工具\"",
         "\"Danger Zone\"": "\"危险区域\"",
         "\"Delete Project\"": "\"删除项目\"",
-        "\"Open\"": "\"打开\"",
         "\"Always Ask\"": "\"始终询问\"",
         "\"Require Review\"": "\"需要评审\"",
         "\"Custom\"": "\"自定义\"",
@@ -1721,7 +1754,6 @@ def main():
         "\"Reject\"": "\"拒绝\"",
         "\"Deny\"": "\"拒绝\"",
         "\"Completed\"": "\"已完成\"",
-        "\"Task\"": "\"任务\"",
         "\"running\"": "\"运行中\"",
         "\"Running\"": "\"运行中\"",
         "\"completed\"": "\"已完成\"",
@@ -1887,7 +1919,6 @@ def main():
         "Confirm the command is safe to run outside of the sandbox with full network and disk access.": "请确认此命令在沙箱外运行是安全的（执行后将拥有宿主机的完整网络与本地磁盘读写权限）。",
         "Untrusted workspace": "不受信任的工作区",
         "Trust Workspace": "信任当前工作区",
-        "Project 4K": "项目 4K 增强模式",
         "Context Menus": "右键菜单",
         "Navigation": "导航面板",
         "Custom Agents": "自定义智能体",
@@ -2100,7 +2131,6 @@ def main():
         "Projects": "项目列表",
         "Show All": "展开全部",
         "Show Less": "收起折叠",
-        "Conversations": "历史会话",
         "High Contrast": "高对比度",
         "Standard Contrast": "标准对比度",
         "Console Telemetry": "控制台遥测日志",
@@ -2141,6 +2171,281 @@ def main():
         "QUOTA_EXHAUSTED": "配额已耗尽",
         "RATE_LIMIT_EXCEEDED": "已超出速率频率限制",
         "Please verify your account to continue using": "请验证您的账户身份以继续使用",
+        "text:\"Shortcuts\"": "text:\"键盘快捷键\"",
+        "text:\"Provide Feedback\"": "text:\"提供使用反馈\"",
+        "label:\"Shortcuts\"": "label:\"键盘快捷键\"",
+        "title:\"Shortcuts\"": "title:\"键盘快捷键\"",
+        "label:\"Provide Feedback\"": "label:\"提供使用反馈\"",
+        "title:\"Provide Feedback\"": "title:\"提供使用反馈\"",
+        "label:\"Developer\"": "label:\"开发者选项\"",
+        "title:\"Developer\"": "title:\"开发者选项\"",
+        "label:\"Project General\"": "label:\"项目常规设置\"",
+        "title:\"Project General\"": "title:\"项目常规设置\"",
+        "label:\"Project Folders\"": "label:\"项目关联目录\"",
+        "title:\"Project Folders\"": "title:\"项目关联目录\"",
+        "label:\"Project Agent\"": "label:\"项目智能体配置\"",
+        "title:\"Project Agent\"": "title:\"项目智能体配置\"",
+        "Show or Hide Plugins": "显示或隐藏插件",
+        "Show in Sidebar": "在侧边栏中显示",
+        "Open plugin page": "打开插件页面",
+        "Open skill page": "打开技能页面",
+        "Open in side pane": "在侧边栏面板中打开",
+        "Enable the plugin to sign in.": "请先启用该插件以进行登录。",
+        "Enable this plugin to manage its accounts.": "启用此插件以管理其账号。",
+        "Other sign-in options": "其他登录选项",
+        "No sign-in needed": "无需登录",
+        "Make default": "设为默认",
+        "Execution Identity": "执行身份",
+        "Language server release channel": "语言服务器发布通道",
+        "Cancel Generation": "取消生成",
+        "Voice Mode": "语音模式",
+        "Voice engine": "语音引擎",
+        "Voice engine address": "语音引擎地址",
+        "Default (Mendel)": "默认 (Mendel)",
+        "Services this plugin connects to on your behalf. Credentials stay on this machine and are only sent to the domains listed.": "此插件代表你连接的服务。凭据仅保存在本机，且只会发送至所列域名。",
+        "Signed-in accounts": "已登录账号",
+        "Add account": "添加账号",
+        "Restart sign-in": "重新登录",
+        "Reopen sign-in page": "重新打开登录页面",
+        "Paste the code shown after you sign in.": "粘贴登录后显示的授权码。",
+        "Paste code": "粘贴授权码",
+        "Needs re-auth": "需要重新认证",
+        "Go to Accounts": "前往账号设置",
+        "Account connected.": "账号已连接。",
+        "Sign in required": "需要登录",
+        "Setup required": "需要完成配置",
+        "This plugin requires authentication before the agent can use its tools.": "此插件需要先完成身份认证，智能体才能使用其工具。",
+        "Build With Google Plugins": "Build With Google 插件",
+        "Browse the Marketplace": "浏览插件市场",
+        "Find skills, agents, and more in the Marketplace.": "在插件市场中探索技能、智能体等更多扩展。",
+        "See more in Plugins": "查看更多插件",
+        "See less in Plugins": "收起插件列表",
+        "No plugins available.": "暂无可用插件。",
+        "No plugins match your search.": "没有与搜索匹配的插件。",
+        "Plugin update required": "需要更新插件",
+        "App update required": "需要更新应用",
+        "Delete plugin": "删除插件",
+        "Delete agent": "删除智能体",
+        "Delete server": "删除服务器",
+        "Edit config": "编辑配置",
+        "Sign out of this server?": "确定要退出此服务器吗？",
+        "Configure agent execution, queued message delivery, and permissions.": "配置智能体执行策略、排队消息发送方式以及权限规则。",
+        "Play a sound when your action is needed or the agent finishes.": "当需要你操作或智能体完成任务时播放提示音。",
+        "Show system notifications when your action is needed or the agent finishes.": "当需要你操作或智能体完成任务时显示系统通知。",
+        "Set the volume of agent sounds.": "设置智能体提示音的音量。",
+        "Let the agent access past conversations to inform its responses.": "允许智能体参考历史对话以提供更准确的回答。",
+        "Open files in the background if the agent creates or edits them": "当智能体创建或编辑文件时在后台打开文件",
+        "Replace the default browser right-click menu with quick actions.": "使用快捷操作菜单替换默认的浏览器右键菜单。",
+        "Configure the maximum width of the conversation panel.": "配置对话面板的最大宽度。",
+        "Predict the location of your next edit and navigate you there with a tab keypress.": "预测你下一次编辑的位置，按 Tab 键即可直接跳转。",
+        "Include default customizations, such as default skills.": "包含默认自定义项（例如默认技能）。",
+        "Keep the app accessible from the menu bar and running in the background when all windows are closed.": "关闭所有窗口后仍保留在菜单栏并在后台继续运行。",
+        "Automatic Check for Updates": "自动检查更新",
+        "Check for Updates": "检查更新",
+        "Remote Control": "远程控制",
+        "Open in Remote Control": "在远程控制中打开",
+        "Manage your conversations from the companion website.": "通过配套网页端管理你的对话。",
+        "Work with local agents from another device.": "从其他设备协作控制本地智能体。",
+        "Device Name": "设备名称",
+        "Enter device name...": "输入设备名称...",
+        "Windows Subsystem for Linux": "适用于 Linux 的 Windows 子系统 (WSL)",
+        "Local Windows environment": "本地 Windows 环境",
+        "Reopen Locally": "在本地重新打开",
+        "Feature Environment Override": "特性环境覆盖",
+        "Operating System": "操作系统",
+        "Auto (detected)": "自动（检测）",
+        "Configure global allowed and denied resource permissions.": "配置全局允许和拒绝的资源访问权限。",
+        "Permission Settings": "权限设置",
+        "Permission Details": "权限详情",
+        "Paths the agent can read.": "允许智能体读取的路径。",
+        "Paths the agent can modify.": "允许智能体修改的路径。",
+        "URLs the agent can read or open in the browser.": "允许智能体在浏览器中读取或打开的 URL。",
+        "URLs the agent can actuate on using the browser.": "允许智能体在浏览器中执行交互操作的 URL。",
+        "Advanced Web Access": "高级网页访问",
+        "Workspace Creation": "工作区创建",
+        "A shell setup script run before every command the agent executes in this project. Overrides the global script.": "智能体在此项目中执行每条命令前运行的 Shell 初始化脚本，会覆盖全局脚本。",
+        "No folders added yet.": "暂未添加文件夹。",
+        "No resources added yet.": "暂未添加资源。",
+        "Filter resources...": "筛选资源...",
+        "No matching resources found.": "未找到匹配的资源。",
+        "Remove resource": "移除资源",
+        "Failed to save project": "保存项目失败",
+        "Save Configuration": "保存配置",
+        "Toggle sidebar": "切换侧边栏",
+        "Close Sidebar": "关闭侧边栏",
+        "Toggle Fullscreen": "切换全屏",
+        "Maximize Pane": "最大化面板",
+        "Restore Pane": "还原面板",
+        "Pin Tab": "固定标签页",
+        "Unpin Tab": "取消固定标签页",
+        "Command Palette": "命令面板",
+        "Open Command Palette": "打开命令面板",
+        "Search Conversations": "搜索对话",
+        "Start voice": "开启语音",
+        "End voice": "结束语音",
+        "Voice on": "语音已开启",
+        "Mute mic": "麦克风静音",
+        "Unmute mic": "取消麦克风静音",
+        "Microphone blocked. Allow mic access.": "麦克风已被拦截，请允许麦克风访问权限。",
+        "Voice disconnected.": "语音连接已断开。",
+        "Couldn't start voice. Try again.": "无法启动语音，请重试。",
+        "Type any voice server address.": "输入任意语音服务器地址。",
+        "One live model talks and hands real lookups to Jetski.": "由单个实时模型负责对话，并将实际查询交由 Jetski 处理。",
+        "Whatever the voice-engine-addr flag serves you.": "使用 voice-engine-addr 标志所提供的语音服务地址。",
+        "Talker + Narrator (relay)": "对话者 + 旁白 (中继)",
+        "A fast Talker acks; Jetski answers; a Narrator reads it out.": "快速对话模型负责即时响应，Jetski 负责解答，再由旁白模型朗读出来。",
+        "Start Voice Recording": "开始语音录制",
+        "Stop Voice Recording": "停止语音录制",
+        "Stop Recording": "停止录音",
+        "Stop Recording and Send": "停止录音并发送",
+        "Sending transcribed message...": "正在发送转写消息...",
+        "Chief of Staff voice mode is active": "幕僚长语音模式已激活",
+        "Chief of Staff voice mode stopped": "幕僚长语音模式已停止",
+        "Voice recording is unavailable while the Chief of Staff mic is on": "幕僚长麦克风开启期间无法使用语音录制",
+        "Disk is full. Search will no longer match in conversation bodies until you clear up space and restart.": "磁盘空间已满。在清理空间并重启之前，搜索将不再匹配对话正文内容。",
+        "Untitled Conversation": "未命名对话",
+        "Open Conversation": "打开对话",
+        "Sort Conversations": "排序对话",
+        "Archive Conversation": "归档对话",
+        "Conversation Archived": "对话已归档",
+        "Rename Conversation": "重命名对话",
+        "Recent Conversations": "最近对话",
+        "No conversations found": "未找到对话",
+        "Mark This Conversation as Read": "将此对话标为已读",
+        "Mark This Conversation as Unread": "将此对话标为未读",
+        "Failed to start conversation": "启动对话失败",
+        "Failed to stop conversation": "停止对话失败",
+        "Failed to delete conversation": "删除对话失败",
+        "Failed to load shared conversation": "加载分享的对话失败",
+        "The conversation could not be loaded because its data was not found.": "无法加载该对话，因为未找到其数据。",
+        "This conversation is also open in another app. Sending messages from both may cause conflicts.": "此对话已在另一个应用中打开，同时在两端发送消息可能会导致冲突。",
+        "This conversation is not on disk. Delete it to remove it from your sidebar.": "此对话不在磁盘上。请将其删除以从侧边栏移除。",
+        "Ask a quick question without interrupting the main conversation.": "在不打断主对话的情况下快速提问。",
+        "Send Message": "发送消息",
+        "Queue Message": "排队发送消息",
+        "Cancel Sending Message": "取消发送消息",
+        "Sends after agent finishes working": "在智能体完成当前工作后发送",
+        "Collapse queued messages": "折叠排队消息",
+        "Expand queued messages": "展开排队消息",
+        "Message queued.": "消息已加入队列。",
+        "Queued message deleted": "排队消息已删除",
+        "Waiting for your input": "等待您的输入",
+        "Waiting for user input": "等待用户输入",
+        "Input required": "需要输入",
+        "Root Conversation": "根对话",
+        "Sender Agent": "发送方智能体",
+        "Cancel Task": "取消任务",
+        "Cancel All Tasks": "取消所有任务",
+        "Delete Task": "删除任务",
+        "Analyzing Task Log": "正在分析任务日志",
+        "Analyzed Task Log": "已分析任务日志",
+        "Failed to stop agent": "停止智能体失败",
+        "Custom agents are not available in Best of N mode.": "Best-of-N 模式下不支持使用自定义智能体。",
+        "No Custom Agents or Plugins": "暂无自定义智能体或插件",
+        "Loading custom agents...": "正在加载自定义智能体...",
+        "Confirmation required to execute this step": "执行此步骤需要确认",
+        "Accept and continue": "接受并继续",
+        "Cancel Step": "取消步骤",
+        "Cancel questionnaire": "取消问卷",
+        "Cancel questionnaire and stop the agent": "取消问卷并停止智能体",
+        "Step Details": "步骤详情",
+        "Step Timing": "步骤耗时",
+        "Step details have been cleared": "步骤详情已清理",
+        "Excluded Step": "已排除的步骤",
+        "Hidden Active Step": "隐藏的活动步骤",
+        "This step is visible in the standard conversation view, but was excluded from the messages sent to the model.": "此步骤在标准对话视图中可见，但已从发送给模型的消息中排除。",
+        "Select a step in the timeline to inspect": "在时间线中选择一个步骤进行检查",
+        "Context usage": "上下文用量",
+        "Session Summary": "会话摘要",
+        "Code Change Summary": "代码变更摘要",
+        "Fallback Summary Used": "已使用回退摘要",
+        "Time spent generating the initial user intent summary for this conversation.": "为此对话生成初始用户意图摘要所花费的时间。",
+        "Non-model response token counts are estimations. The model API does not return per-message token counts.": "非模型响应的 Token 数量为估算值。模型 API 不会返回单条消息的 Token 数量。",
+        "Prompt and tools metadata for this invocation has been cleared to save space. Full details are only preserved for the latest invocation.": "本次调用的提示词与工具元数据已清理以节省空间。完整详情仅保留最新一次调用。",
+        "MCP App": "MCP 应用",
+        "Open in Side Pane": "在侧边面板中打开",
+        "Side Pane UI Available": "侧边面板界面可用",
+        "Fix with Agent": "使用智能体修复",
+        "Ask the agent to diagnose and fix this server": "让智能体诊断并修复此服务器",
+        "Use Add MCP to browse the store, or add a custom server via the MCP config.": "使用“添加 MCP”浏览商店，或通过 MCP 配置文件添加自定义服务器。",
+        "This server needs you to sign in before the agent can use its tools.": "您需要先登录此服务器，智能体才能使用其工具。",
+        "These servers need you to sign in before the agent can use their tools.": "您需要先登录这些服务器，智能体才能使用其工具。",
+        "This tool output was truncated (cut off) because it exceeded the single-step limits. Details are visible in the Inspector.": "由于超出单步限制，此工具输出已被截断。可在检查器中查看完整详情。",
+        "Open in Tab": "在标签页中打开",
+        "Open in Notebook View": "在 Notebook 视图中打开",
+        "Loading Notebook View...": "正在加载 Notebook 视图...",
+        "Copy Image": "复制图像",
+        "Copy Content": "复制内容",
+        "Download File": "下载文件",
+        "Upload Files": "上传文件",
+        "Recent Files": "最近的文件",
+        "Recent files": "最近的文件",
+        "File path breadcrumbs": "文件路径面包屑导航",
+        "Failed to read file data URL": "读取文件数据 URL 失败",
+        "Failed to read file content": "读取文件内容失败",
+        "File system provider not available": "文件系统提供程序不可用",
+        "No files or folders found": "未找到文件或文件夹",
+        "Binary file not shown": "未显示二进制文件",
+        "Image preview not available": "图像预览不可用",
+        "Preview is not available for this file type.": "此文件类型不支持预览。",
+        "Inline PDF preview is not available in this environment.": "当前环境不支持内联 PDF 预览。",
+        "Unable to resolve PDF source URL": "无法解析 PDF 源 URL",
+        "Unable to resolve audio source URL": "无法解析音频源 URL",
+        "Folder doesn't exist": "文件夹不存在",
+        "Debug view layout": "调试视图布局",
+        "Manifest Changes": "清单更改",
+        "True changes vs the parent workspace": "相对于父工作区的实际更改",
+        "All changes since the branch point": "自原分支分叉点以来的所有更改",
+        "Branch Changes": "分支更改",
+        "Files Changed": "已更改文件",
+        "No file changes": "无文件更改",
+        "Stage and commit all changes": "暂存并提交所有更改",
+        "Commit message cannot be empty": "提交信息不能为空",
+        "Generating commit message...": "正在生成提交信息...",
+        "Failed to Generate Commit Message": "生成提交信息失败",
+        "Commit succeeded": "提交成功",
+        "Failed to Commit": "提交失败",
+        "Amend succeeded": "修补提交成功",
+        "No changes to amend": "没有可修补的更改",
+        "No commit to amend": "没有可修补的提交",
+        "Failed to Amend": "修补提交失败",
+        "No remote configured": "未配置远程仓库",
+        "No commits to push": "没有可推送的提交",
+        "Not on a branch": "当前不在分支上",
+        "Push succeeded": "推送成功",
+        "Failed to Push": "推送失败",
+        "Open a pull request": "创建拉取请求 (PR)",
+        "Open a merge request": "创建合并请求 (MR)",
+        "Open the change": "打开更改详情",
+        "Copy Command": "复制命令",
+        "Send command input?": "是否发送命令输入？",
+        "Failed to send command input": "发送命令输入失败",
+        "Setup script failed.": "初始化脚本执行失败。",
+        "Restart Main Language Server": "重启主语言服务器",
+        "Search for commands...": "搜索命令...",
+        "Search across files...": "跨文件搜索...",
+        "Search file contents...": "搜索文件内容...",
+        "Type absolute path or navigate folders...": "输入绝对路径或浏览文件夹...",
+        "Select Worktree": "选择工作树 (Worktree)",
+        "Configure Worktree Branches": "配置工作树分支",
+        "Configure Branches": "配置分支",
+        "Select Default Branch": "选择默认分支",
+        "Select branch": "选择分支",
+        "No branches": "暂无分支",
+        "Run in your current workspace": "在当前工作区中运行",
+        "Run in a new worktree": "在新建工作树中运行",
+        "Clone current workspace into a new independent workspace": "将当前工作区克隆为新的独立工作区",
+        "Remount workspace": "重新挂载工作区",
+        "Failed to create workspace.": "创建工作区失败。",
+        "Failed to create worktree": "创建工作树失败",
+        "Failed to open created workspace": "打开已创建的工作区失败",
+        "Worktrees are a git feature. This folder is shared as is.": "工作树 (Worktree) 是一项 Git 功能。此文件夹将按原样共享。",
+        "Access grants": "访问授权",
+        "Commands and files these agents can use.": "这些智能体可以使用的命令和文件。",
+        "Folders these agents can access.": "这些智能体可以访问的文件夹。",
+        "Browser Actuation Rules": "浏览器操作规则",
+        "Configure allowed and denied URLs for browser actuation.": "配置允许和拒绝浏览器进行交互操作的 URL。",
+        "Administrator access (UAC)": "管理员权限 (UAC)",
     }
 
     print("Applying translations...")
@@ -2177,6 +2482,36 @@ def main():
     "Customizations": "自定义扩展",
     "Browser": "内置浏览器",
     "Conversations": "历史会话",
+    "Permissions": "安全与权限",
+    "Notifications": "通知与提醒",
+    "Developer": "开发者选项",
+    "Shortcuts": "键盘快捷键",
+    "Provide Feedback": "提供使用反馈",
+    "Project General": "项目常规设置",
+    "Project Folders": "项目关联目录",
+    "Project Agent": "项目智能体配置",
+    "Default Light": "默认浅色",
+    "Default Dark": "默认深色",
+    "Delete": "删除",
+    "Open": "打开",
+    "Paste": "粘贴",
+    "Voice Mode": "语音模式",
+    "Voice engine": "语音引擎",
+    "Start voice": "开启语音",
+    "End voice": "结束语音",
+    "Voice on": "语音已开启",
+    "Mute mic": "麦克风静音",
+    "Unmute mic": "取消麦克风静音",
+    "Show in Sidebar": "在侧边栏中显示",
+    "Show or Hide Plugins": "显示或隐藏插件",
+    "Make default": "设为默认",
+    "No sign-in needed": "无需登录",
+    "Other sign-in options": "其他登录选项",
+    "Execution Identity": "执行身份",
+    "MCP App": "MCP 应用",
+    "Cancel Generation": "取消生成",
+    "Open in side pane": "在侧边面板中打开",
+    "Connected": "已连接",
     "Always Ask": "每次均请求确认",
     "Require Review": "需要人工评审",
     "Custom": "自定义策略",
@@ -3018,25 +3353,35 @@ def main():
 """
 
     # ---------------- 注入斜杠命令 (如 /compact) 名字与解释本地化 ----------------
-    slash_target = 'var b8a=({item:a,isSelected:b,setSelected:c,selectAndClose:e})=>{var f=a.getRenderInfo(),g=a.queryMatches;if(!f)return null;var h=f.label,k=f.icon,l=f.description,m=f.sourceLabel;'
-    slash_replacement = 'var b8a=({item:a,isSelected:b,setSelected:c,selectAndClose:e})=>{var f=a.getRenderInfo(),g=a.queryMatches;if(!f)return null;var h=f.label,k=f.icon,l=f.description,m=f.sourceLabel;try{var _cm={"compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"/compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"/goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"/plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"/browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"/schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"/grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"/teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"/learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"},"/boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"}};if(h&&_cm[h.toLowerCase()]){var _target=_cm[h.toLowerCase()];h=_target.n;if(_target.d)l={text:_target.d,rtl:!1};}}catch(_e){}'
-    if slash_target in content:
+    slash_tail = '=({item:a,isSelected:b,setSelected:c,selectAndClose:e})=>{var f=a.getRenderInfo(),g=a.queryMatches;if(!f)return null;var h=f.label,k=f.icon,l=f.description,m=f.sourceLabel;'
+    # 组件压缩名每版都会变（2.24 b8a / 2.25 x8a），按结构动态定位
+    _sm = re.search(r'var ([\w$]+)' + re.escape(slash_tail), content)
+    slash_target = ('var ' + _sm.group(1) + slash_tail) if _sm else '__CHM_SLASH_NOT_FOUND__'
+    slash_replacement = slash_target + 'try{var _cm={"compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"/compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"/goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"/plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"/browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"/schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"/grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"/teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"/learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"},"/boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"}};if(h&&_cm[h.toLowerCase()]){var _target=_cm[h.toLowerCase()];h=_target.n;if(_target.d)l={text:_target.d,rtl:!1};}}catch(_e){}'
+    if os.environ.get("CHM_NO_INJECT"):
+        pass
+    elif slash_target in content:
         content = content.replace(slash_target, slash_replacement)
         print("Successfully injected slash command (compact, etc.) label & description localizer!")
     else:
         print("[!] Warning: slash_target not found in bundle!")
 
     # ---------------- 注入设置侧边栏原生中文 label ----------------
-    zh_ogb = 'var ogb=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Tab",label:"代码补全 (Tab)"},{screen:"Editor",label:"编辑器配置"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
+    zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Tab",label:"代码补全 (Tab)"},{screen:"Editor",label:"编辑器配置"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
     # 匹配可能包含英文或已汉化标签的 ogb
-    ogb_pattern = r'var ogb=\[\{screen:"General"\}[\s\S]*?\{screen:"Regroup Google3 Chats"\}\]'
-    if re.search(ogb_pattern, content):
-        content = re.sub(ogb_pattern, zh_ogb, content)
+    # 变量名每版都会变（2.24 ogb / 2.25 Cgb），按结构动态定位
+    ogb_pattern = r'var ([\w$]+)=\[\{screen:"General"\}[^\]]{0,1200}?\{screen:"Regroup Google3 Chats"\}\]'
+    _om = re.search(ogb_pattern, content)
+    if os.environ.get("CHM_NO_INJECT"):
+        pass
+    elif _om:
+        content = content[:_om.start()] + zh_ogb.replace("__OGB__", _om.group(1)) + content[_om.end():]
         print("Successfully injected localized labels into ogb settings array via regex!")
     else:
         print("[!] Warning: ogb_pattern not found in bundle!")
 
-    content = content + "\n" + dom_translator_js
+    if not os.environ.get("CHM_NO_INJECT"):
+        content = content + "\n" + dom_translator_js
     # ---------------- 注入全局动态 DOM 翻译拦截器 ----------------
     
     # Save the modified file
