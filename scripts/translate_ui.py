@@ -99,8 +99,6 @@ PROTECT_PATTERNS = [
     (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_D + r')(?=\s*[,)])', "查找调用实参"),
     (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_S + r')(?=\s*[,)])', "查找调用实参"),
     (r'(\bencodeURIComponent\(\s*)(' + _STR_D + r')(?=\s*\))', "URL编码实参"),
-    (r'(\bFe\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*\))', "字段提取实参"),
-    (r'(\bLG\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*,)', "快捷键绑定实参"),
     # 10) 时间轴步骤坐标映射表
     (r'(,\s*\[\s*)("CHECKPOINT")(?=\s*,\s*\d+\s*\])', "时间轴步骤枚举"),
     # 11) 项目设置 Redux Reducer 白名单数组
@@ -118,6 +116,22 @@ def detect_action_aliases(content):
         names.add(m.group(1))
     print(f"Detected action aliases: {sorted(names)}")
     return sorted(names)
+
+
+def detect_field_accessor(content):
+    """识别读取 Protobuf/结构化字段的函数名（如 2.25 Fe / 2.26 ef）。"""
+    m = re.search(r'([a-zA-Z0-9_$]+)\s*\(\s*[a-zA-Z0-9_$]+\s*,\s*"ReusedSubagentId"\s*\)', content)
+    fn = m.group(1) if m else "Fe"
+    print(f"Detected field accessor: {fn}")
+    return fn
+
+
+def detect_key_checker(content):
+    """识别按键判定的底层辅助函数名（如 LG）。"""
+    m = re.search(r'([a-zA-Z0-9_$]+)\s*\(\s*[a-zA-Z0-9_$]+\s*,\s*"Backspace"\s*,', content)
+    fn = m.group(1) if m else "LG"
+    print(f"Detected key checker: {fn}")
+    return fn
 
 
 def protect_code_positions(content):
@@ -159,6 +173,12 @@ def protect_code_positions(content):
         esc = re.escape(alias)
         alias_patterns.append((r'((?<![\w$.])' + esc + r'\s*\(\s*)(' + _STR_D + r')(?=\s*\))', "路由跳转传参"))
         alias_patterns.append((r'((?<![\w$.])' + esc + r'\s*\(\s*)(' + _STR_S + r')(?=\s*\))', "路由跳转传参"))
+
+    acc = detect_field_accessor(content)
+    alias_patterns.append((r'(\b' + re.escape(acc) + r'\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*\))', "字段提取实参"))
+
+    kc = detect_key_checker(content)
+    alias_patterns.append((r'(\b' + re.escape(kc) + r'\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*,)', "快捷键绑定实参"))
 
     for pattern, label in PROTECT_PATTERNS + alias_patterns:
         content = re.sub(pattern, _make_sub(label), content)
@@ -2446,6 +2466,162 @@ def main():
         "Browser Actuation Rules": "浏览器操作规则",
         "Configure allowed and denied URLs for browser actuation.": "配置允许和拒绝浏览器进行交互操作的 URL。",
         "Administrator access (UAC)": "管理员权限 (UAC)",
+        "Built-in Browser Requires Isolated Web App (IWA)": "内置浏览器需要独立 Web 应用 (IWA)",
+        "Install and launch the Jetski Isolated Web App in three steps to embed pages with full browser capabilities.": "只需三步即可安装并启动 Jetski 独立 Web 应用，以完整的浏览器能力嵌入页面。",
+        "Collapse IWA installation steps": "折叠 IWA 安装步骤",
+        "Expand IWA installation steps": "展开 IWA 安装步骤",
+        "Dismiss IWA installation banner": "关闭 IWA 安装横幅",
+        "Enable Chrome IWA flags and relaunch Chrome:": "启用 Chrome IWA 标志并重启 Chrome：",
+        "Download the signed bundle, open": "下载签名包，打开",
+        "Download Jetski IWA (jetski-shell.swbn)": "下载 Jetski IWA (jetski-shell.swbn)",
+        "Launch Jetski in its installed Isolated Web App window:": "在已安装的独立 Web 应用窗口中启动 Jetski：",
+        "Open in Jetski IWA": "在 Jetski IWA 中打开",
+        "Taking longer than usual to load": "加载耗时超过预期",
+        "This page is taking longer than expected to load, or it may be blocking embedded views (via X-Frame-Options or CSP). We'll keep waiting, or you can open it directly in a new tab.": "此页面加载时间长于预期，或可能阻止了嵌入视图（通过 X-Frame-Options 或 CSP）。我们将继续等待，或者您可以直接在新标签页中打开。",
+        "This page is blocked in the built-in browser by your organization's Context-Aware Access policy.": "此页面已被您组织的上下文感知访问 (CAA) 策略在内置浏览器中阻止。",
+        "Open the page in system browser": "在系统默认浏览器中打开页面",
+        "When Turbo mode is on, the agent will automatically capture screenshots in the Browser without explicit user input. You can toggle this setting in Antigravity's settings.": "开启 Turbo 模式后，代理会在浏览器中自动捕获屏幕截图，无需用户显式输入。您可以在 Antigravity 设置中切换此项。",
+        "Connected apps": "已连接应用",
+        "Apps connected to your account": "已连接到您账号的应用",
+        "Sign in to an app once and your agent can use it on any device. Open an app to see the account it uses or to disconnect it.": "只需登录应用一次，您的代理即可在任意设备上使用它。打开应用可查看其使用的账号或断开连接。",
+        "Sign in once and your agent can use these apps on any device. Nothing is installed on this computer.": "只需登录一次，您的代理即可在任意设备上使用这些应用。无需在本机安装任何内容。",
+        "Connect an account so the agent can use this app.": "连接账号以便代理使用此应用。",
+        "No apps connected yet. Connect one from Marketplace.": "尚未连接任何应用。可从应用市场连接应用。",
+        "No apps available.": "暂无可用应用。",
+        "Loading apps...": "正在加载应用...",
+        "Needs reconnect": "需要重新连接",
+        "On this computer": "在此电脑上",
+        "Plugins, skills and MCP servers installed here. They run locally.": "已在此电脑上安装的插件、技能和 MCP 服务器。它们在本地运行。",
+        "Customizations views": "自定义扩展视图",
+        "Customizations source": "自定义扩展源",
+        "Set up authentication": "设置身份验证",
+        "Sign in required.": "需要登录。",
+        "Replacing removes the currently installed plugin and installs the new one in its place.": "替换将移除当前已安装的插件，并在原位置安装新插件。",
+        "Currently installed": "当前已安装",
+        "Replace with": "替换为",
+        "Enter the configuration values this MCP server needs. Saving restarts the server with them.": "输入此 MCP 服务器所需的配置值。保存后将使用新配置重启服务器。",
+        "Configuration parameters are required before this server can be started": "启动此服务器前必须先配置必要参数",
+        "This MCP server can no longer be configured.": "此 MCP 服务器无法再进行配置。",
+        "Automatically prompt you to restart the app when a new update is available. When disabled, you can check for updates manually from the app menu.": "有新更新可用时自动提示重启应用。禁用后，您可以通过应用菜单手动检查更新。",
+        "A nickname for identifying this application in the companion website. Changing this will restart the connection.": "在配套网站中标识此应用程序的昵称。修改此项将重启连接。",
+        "A label for this computer when you connect from another device. Changing it reconnects.": "从其他设备连接时此电脑的显示标签。修改后将重新连接。",
+        "Continue your work from another device with Remote Control. Scan the QR code or open the link below.": "通过远程控制在其他设备上继续您的工作。扫描下方二维码或打开链接。",
+        "Enable Remote Control": "启用远程控制",
+        "Remote Control Instances": "远程控制实例",
+        "No instances yet.": "暂无实例。",
+        "Notification Preferences": "通知偏好设置",
+        "To modify notification settings, open your operating system's system preferences.": "如需修改通知设置，请打开操作系统的系统偏好设置。",
+        "Upload Debug Bundle": "上传调试日志包",
+        "Debug bundle uploaded!": "调试日志包已上传！",
+        "When debug mode is on, you can see additional information about each steps in the conversation.": "开启调试模式后，您可以查看对话中每个步骤的详细附加信息。",
+        "Custom models are only supported on Linux machines.": "自定义模型仅在 Linux 系统上受支持。",
+        "Select Billing Model": "选择计费模型",
+        "No models available": "无可用模型",
+        "New models have been enabled for you!": "已为您启用新模型！",
+        "Toggle Status Bar": "切换状态栏",
+        "Open Link in New Tab": "在新标签页中打开链接",
+        "Open Link in External Browser": "在外部浏览器中打开链接",
+        "Open Image in New Tab": "在新标签页中打开图片",
+        "Copy Link Address": "复制链接地址",
+        "Copy Image Address": "复制图片地址",
+        "Copy Message": "复制消息",
+        "Search tabs, files, extensions, subagents, artifacts, tasks...": "搜索标签页、文件、扩展、子代理、产物、任务...",
+        "Don't enter corp passwords": "请勿输入企业内部密码",
+        "Typing your corp password here may trigger a Password Alert reset.": "在此处输入企业密码可能会触发“密码警报”强制重置。",
+        "Join the Google Chat space": "加入 Google Chat 交流空间",
+        "Ask questions, report issues, and discuss features": "提出疑问、反馈问题并讨论功能特性",
+        "Fork in New Workspace": "在新工作区中分叉",
+        "Fork in Shared Workspace": "在共享工作区中分叉",
+        "Keep In Menu Bar": "保留在菜单栏",
+        "New Remote Project": "新建远程项目",
+        "Create a project whose conversations run remotely.": "创建一个会话在远端运行的项目。",
+        "Files and resources in cloud workspaces": "云端工作区中的文件与资源",
+        "Stored and mounted in your cloud environment": "存储并挂载于您的云端环境中",
+        "Uploaded project files and in-chat attachments are stored on Google servers and mounted into your cloud sandbox so your agent can read and work with them.": "上传的项目文件和聊天附件均存储在 Google 服务器上，并挂载到您的云沙箱中，以便您的代理读取并处理它们。",
+        "Connected Google Drive and GitHub resources": "已连接的 Google 云端硬盘与 GitHub 资源",
+        "Manage and delete your data anytime": "随时管理与删除您的数据",
+        "Remove individual uploaded files or connected resources in Project Settings, or delete a project or conversation to remove its stored files.": "在项目设置中移除单个已上传文件或已连接资源，或删除项目与会话以清理其存储的文件。",
+        "Avoid uploading highly sensitive data and verify actions taken by your agent. Make sure you have the": "请避免上传高度敏感数据，并核实代理所执行的操作。请确保您拥有",
+        "Failed to revert conversation": "撤回会话失败",
+        "Cannot revert a message sent while the agent was running": "无法撤回智能体运行期间发送的消息",
+        "Fork in Current Workspace": "在当前工作区中分支",
+        "Shares this repository, with a working copy of its own. Uncommitted changes stay behind.": "共享当前代码仓，拥有独立的工作副本。未提交的更改将保留在原处。",
+        "The server returned no conversation to fork into.": "服务器未返回可用于分支的会话。",
+        "Fork warning": "分支警告",
+        "Undo to Here": "撤销至此处",
+        "Show temporary and forked workspaces": "显示临时和已分支的工作区",
+        "Sync newly created JJ worktrees to head when starting a conversation.": "启动会话时将新建的 JJ 工作树同步至最新 HEAD。",
+        "Select the workspace type that will be used for new conversations started with the New Workspace option.": "选择通过“新工作区”选项启动新会话时所使用的工作区类型。",
+        "Multi-conversation view is not available": "多会话视图不可用",
+        "Conversation is not open in this Hub window": "当前 Hub 窗口中未打开该会话",
+        "Review pending conversations": "审查待处理会话",
+        "Dismiss conversation open elsewhere warning": "关闭会话已在别处打开的警告",
+        "Conversation unavailable": "会话不可用",
+        "Cancel Questionnaire and Stop the Agent": "取消问卷并停止智能体",
+        "Multi-select": "多选",
+        "Previous question": "上一题",
+        "Next question": "下一题",
+        "Why did you choose this response?": "您为何选择该回答？",
+        "Better instruction following": "更好地遵循了指令",
+        "Better solution & code": "方案与代码更优",
+        "More thorough research": "调研更加深入全面",
+        "The other model hallucinated": "另一个模型产生了幻觉",
+        "Clearer writing & artifacts": "表达与产物更清晰",
+        "Faster response": "响应更迅速",
+        "Pick at most 2 reasons": "最多选择 2 个原因",
+        "Something else (optional)": "其他原因（可选）",
+        "(tell the agent what to do instead)": "（告知智能体应采取的替代操作）",
+        "Chief of Staff canvas": "幕僚长画布",
+        "Chief of Staff Dashboard": "幕僚长仪表盘",
+        "Welcome to your Chief of Staff": "欢迎使用幕僚长",
+        "Pick a suggestion below to get started, or ask me anything.": "在下方挑选建议开始，或直接向我提问。",
+        "Chief of Staff is listening \\u2014 open the Chief of Staff conversation": "幕僚长正在聆听 — 打开幕僚长会话",
+        "Canvas \\u00b7 written by your Chief of Staff \\u00b7 display only": "画布 · 由幕僚长编写 · 仅供展示",
+        "Canvas page \\u00b7 display only": "画布页面 · 仅供展示",
+        "Sent to Chief of Staff": "已发送至幕僚长",
+        "Chief of Staff voice message failed": "幕僚长语音消息发送失败",
+        "A permanent Chief of Staff conversation in the sidebar that manages your other conversations: delegate tasks, check status, and read results from one place.": "在侧边栏常驻的幕僚长会话，用于统筹管理其他会话：在此统一指派任务、检查进度和查阅成果。",
+        "Get started with Remote Control": "开始使用远程控制",
+        "Scan the code to open this device in Remote Control, or": "扫码在远程控制中打开此设备，或",
+        "You cannot sign out from Remote Control. Please sign out on your local application.": "无法在远程控制中退出登录。请在本地桌面应用中退出。",
+        "Describe your Remote Control issue...": "请描述您遇到的远程控制问题...",
+        "Files, folders, and repositories you connect are accessible to your agent in this project, including during background or scheduled runs.": "您所关联的文件、文件夹和代码仓在本项目中均可被智能体访问，包括在后台运行或定时计划任务中。",
+        "These settings can only be changed on the computer running the app, not from a remote session.": "这些设置只能在运行该应用的电脑上修改，无法在远程会话中调整。",
+        "Search for content to open": "搜索要打开的内容",
+        "No step data available": "暂无步骤数据",
+        "Search steps...": "搜索步骤...",
+        "By step type": "按步骤类型",
+        "What the step bars are coloured by": "步骤条颜色的映射依据",
+        "One lane per kind of step, or one per step type": "按步骤类别或步骤类型分道展示",
+        "Steps and containers shorter than this fade back": "短于该时长的步骤与容器将淡化显示",
+        "No execution metadata available for this step.": "此步骤无可用执行元数据。",
+        "This step is not associated with an invocation.": "此步骤未关联任何工具调用。",
+        "Workflow runs": "工作流运行记录",
+        "Grant read access to workflow runs and allow dispatching workflows on specific files and refs.": "授予对工作流运行记录的读取权限，并允许针对特定文件和引用触发工作流。",
+        "Allow reading workflow runs (list, view, watch) across the whole repository.": "允许读取全仓工作流运行记录（列表、查看、监听）。",
+        "What is missing in your workflow": "您目前的工作流中缺少什么",
+        "What you would like to see to address this gap in your workflow": "您希望增加什么来弥补当前工作流的不足",
+        "Open in External Browser": "在外部浏览器中打开",
+        "Plugin metadata": "插件元数据",
+        "Paste new key": "粘贴新密钥",
+        "CAPTURE_EMPTY: capturePage produced empty PNG data": "截图为空：capturePage 生成了空的 PNG 数据",
+        "CAPTURE_EMPTY: capturePage returned an empty image": "截图为空：capturePage 返回了空图像",
+        "CAPTURE_FAILED: capturePage failed after retries": "截图失败：多次重试后 capturePage 仍失败",
+        "CAPTURE_FAILED: capturePage timed out": "截图失败：capturePage 超时",
+        "CAPTURE_FAILED: webview.capturePage is not supported": "截图失败：不支持 webview.capturePage",
+        "ERR_DISALLOWED_URL: Empty URL is not allowed": "不允许的 URL 错误：不允许空 URL",
+        "ISOLATED_WORLD_UNAVAILABLE: Electron isolated world execution is required for agentBrowser": "隔离环境不可用：agentBrowser 需要 Electron 隔离世界执行环境",
+        "Timed out waiting for EXECUTE_SCRIPT_RESULT": "等待脚本执行结果 (EXECUTE_SCRIPT_RESULT) 超时",
+        "Surface disposed before EXECUTE_SCRIPT_RESULT": "在收到脚本执行结果前 Surface 已被释放",
+        "Active Browser page": "活动浏览器页面",
+        "Active Browser pages": "活动浏览器页面",
+        "Allow remote debugging for this browser instance": "允许对此浏览器实例进行远程调试",
+        "Sort and filter conversations": "排序与筛选会话",
+        "The conversation artifacts directory is unknown.": "会话产物目录未知。",
+        "The new conversation has no ID": "新会话没有 ID",
+        "The owning conversation has no section": "所属会话没有分区",
+        "Auto-dismissed due to conversation switching": "因切换会话自动关闭",
+        "Uploaded files and connected resources are mounted in your cloud environment.": "已上传的文件和连接的资源会挂载在您的云环境中。",
     }
 
     print("Applying translations...")
@@ -2475,6 +2651,12 @@ def main():
 (function() {
   const dynamicDict = {
     "Subagent": "子智能体",
+    "Built-in Browser Requires Isolated Web App (IWA)": "内置浏览器需要独立 Web 应用 (IWA)",
+    "Connected apps": "已连接应用",
+    "Chief of Staff canvas": "幕僚长画布",
+    "Cancel Questionnaire and Stop the Agent": "取消问卷并停止智能体",
+    "Fork in Current Workspace": "在当前工作区中分支",
+    "Undo to Here": "撤销至此",
     "Subagents": "子智能体",
     "Agent Team": "智能体团队",
     "Account": "账户信息",

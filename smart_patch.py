@@ -63,11 +63,11 @@ def main():
                 input("退出软件后，按回车键 [Enter] 继续注入流程...")
 
     log("1. 检查并备份 app.asar ...")
-    clean_bak = os.path.join(resources_dir, "app.asar.clean_official_2250")
+    clean_bak = os.path.join(resources_dir, "app.asar.clean_official_2260")
     if os.path.exists(clean_bak):
         # 始终优先以官方干净原版作为基准源，彻底防止污染累积
         shutil.copy2(clean_bak, asar_bak)
-        log("已同步官方纯净基准备份 (app.asar.clean_official_2250 -> app.asar.bak)。")
+        log("已同步官方纯净基准备份 (app.asar.clean_official_2260 -> app.asar.bak)。")
     elif not os.path.exists(asar_bak):
         shutil.copy2(asar_path, asar_bak)
         log("首次安装，备份成功。")
