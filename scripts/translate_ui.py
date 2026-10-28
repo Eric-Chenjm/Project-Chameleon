@@ -119,19 +119,37 @@ def detect_action_aliases(content):
 
 
 def detect_field_accessor(content):
-    """识别读取 Protobuf/结构化字段的函数名（如 2.25 Fe / 2.26 ef）。"""
-    m = re.search(r'([a-zA-Z0-9_$]+)\s*\(\s*[a-zA-Z0-9_$]+\s*,\s*"ReusedSubagentId"\s*\)', content)
-    fn = m.group(1) if m else "Fe"
-    print(f"Detected field accessor: {fn}")
-    return fn
+    """识别读取 Protobuf/结构化字段的函数名（如 2.25 Fe / 2.26 ef / 2.27 ff）。"""
+    idx = content.find('"ReusedSubagentId"')
+    if idx != -1:
+        snippet = content[max(0, idx - 60):min(len(content), idx + 60)]
+        m = re.search(r'([a-zA-Z0-9_$]+)\s*\(\s*([a-zA-Z0-9_$]+)\s*,\s*"ReusedSubagentId"', snippet)
+        if m:
+            fn = m.group(1)
+            print(f"Detected field accessor: {fn}")
+            return fn
+    print("Detected field accessor fallback: Fe")
+    return "Fe"
 
 
 def detect_key_checker(content):
-    """识别按键判定的底层辅助函数名（如 LG）。"""
-    m = re.search(r'([a-zA-Z0-9_$]+)\s*\(\s*[a-zA-Z0-9_$]+\s*,\s*"Backspace"\s*,', content)
-    fn = m.group(1) if m else "LG"
-    print(f"Detected key checker: {fn}")
-    return fn
+    """识别按键判定的底层辅助函数名（如 2.25 LG / 2.26 bH / 2.27 uL）。"""
+    pos = 0
+    while True:
+        idx = content.find('"Backspace"', pos)
+        if idx == -1:
+            idx = content.find("'Backspace'", pos)
+            if idx == -1:
+                break
+        snippet = content[max(0, idx - 50):min(len(content), idx + 50)]
+        km = re.search(r"""([a-zA-Z0-9_$]+)\s*\(\s*([a-zA-Z0-9_$]+)\s*,\s*["']Backspace["']\s*,""", snippet)
+        if km:
+            fn = km.group(1)
+            print(f"Detected key checker: {fn}")
+            return fn
+        pos = idx + 11
+    print("Detected key checker fallback: LG")
+    return "LG"
 
 
 def protect_code_positions(content):
@@ -292,6 +310,21 @@ def main():
     # Define string translation mapping
     # Note: We must be very precise to match JSON property keys, arrays, or JSX definitions
     translations = {
+        "Add screenshot to conversation": "添加屏幕截图到对话",
+        "CitC Workspace (Do not use for PII/NTK data)": "CitC 工作区（请勿用于 PII/NTK 数据）",
+        "Cog Workspace (Do not use for PII/NTK data)": "Cog 工作区（请勿用于 PII/NTK 数据）",
+        "New Workspace (Do not use for PII/NTK data)": "新建工作区（请勿用于 PII/NTK 数据）",
+        "Other Workspaces": "其他工作区",
+        "How loud Jetski's voice is.": "Jetski 语音音量。",
+        "Input device for voice mode.": "语音模式的输入设备。",
+        "The voice Jetski speaks with.": "Jetski 播报使用的音色。",
+        "Mute Live Chat Mic": "静音实时对话麦克风",
+        "Resume it to load this file.": "恢复以加载此文件。",
+        "Resume it to open a new terminal. Anything that was running in this one has stopped.": "恢复以打开新终端。当前终端中运行的所有任务均已停止。",
+        "Select Workspace...": "选择工作区...",
+        "System default": "系统默认",
+        "e.g. work": "例如 work",
+
         "Failed with exit code": "执行失败，退出代码：",
         "Active Terminal": "活动终端",
         "Send to Terminal": "发送到终端",
@@ -2650,6 +2683,21 @@ def main():
 // 注入动态 DOM 汉化引擎 (针对 React 深度封装无法静态替换的长句与危险短词)
 (function() {
   const dynamicDict = {
+    "Add screenshot to conversation": "添加屏幕截图到对话",
+    "CitC Workspace (Do not use for PII/NTK data)": "CitC 工作区（请勿用于 PII/NTK 数据）",
+    "Cog Workspace (Do not use for PII/NTK data)": "Cog 工作区（请勿用于 PII/NTK 数据）",
+    "New Workspace (Do not use for PII/NTK data)": "新建工作区（请勿用于 PII/NTK 数据）",
+    "Other Workspaces": "其他工作区",
+    "How loud Jetski's voice is.": "Jetski 语音音量。",
+    "Input device for voice mode.": "语音模式的输入设备。",
+    "The voice Jetski speaks with.": "Jetski 播报使用的音色。",
+    "Mute Live Chat Mic": "静音实时对话麦克风",
+    "Resume it to load this file.": "恢复以加载此文件。",
+    "Resume it to open a new terminal. Anything that was running in this one has stopped.": "恢复以打开新终端。当前终端中运行的所有任务均已停止。",
+    "Select Workspace...": "选择工作区...",
+    "System default": "系统默认",
+    "Give Feedback": "提供使用反馈",
+    "Microphone": "麦克风",
     "Subagent": "子智能体",
     "Built-in Browser Requires Isolated Web App (IWA)": "内置浏览器需要独立 Web 应用 (IWA)",
     "Connected apps": "已连接应用",
@@ -3534,19 +3582,19 @@ def main():
 })();
 """
 
-    # ---------------- 注入斜杠命令 (如 /compact) 名字与解释本地化 ----------------
-    slash_tail = '=({item:a,isSelected:b,setSelected:c,selectAndClose:e})=>{var f=a.getRenderInfo(),g=a.queryMatches;if(!f)return null;var h=f.label,k=f.icon,l=f.description,m=f.sourceLabel;'
-    # 组件压缩名每版都会变（2.24 b8a / 2.25 x8a），按结构动态定位
-    _sm = re.search(r'var ([\w$]+)' + re.escape(slash_tail), content)
-    slash_target = ('var ' + _sm.group(1) + slash_tail) if _sm else '__CHM_SLASH_NOT_FOUND__'
-    slash_replacement = slash_target + 'try{var _cm={"compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"/compact":{n:"压缩上下文 (/compact)",d:"压缩并精简会话历史，释放上下文窗口空间"},"goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"/goal":{n:"全自动目标达成 (/goal)",d:"执行长时间运行任务，直到目标完全达成为止"},"plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"/plan":{n:"制定实施规划 (/plan)",d:"在执行前生成清晰的分步实施规划文档"},"browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"/browser":{n:"浏览器子智能体 (/browser)",d:"调用内置浏览器进行网页浏览、搜索与交互"},"schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"/schedule":{n:"定时任务调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"},"grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"/grill-me":{n:"方案严审对齐 (/grill-me)",d:"通过互动提问与审查，深挖并对齐方案设计细节"},"teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"/teamwork-preview":{n:"智能体团队协作 (/teamwork-preview)",d:"调度自主智能体团队协作处理大型复杂项目"},"learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"/learn":{n:"经验模式学习 (/learn)",d:"将当前解决方案或修正沉淀为持久记忆与技能"},"boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"},"/boost":{n:"深度推理增强 (/boost)",d:"启用多重视角深度思考、策略规划与严格验证"}};if(h&&_cm[h.toLowerCase()]){var _target=_cm[h.toLowerCase()];h=_target.n;if(_target.d)l={text:_target.d,rtl:!1};}}catch(_e){}'
+    # ---------------- 注入斜杠命令 (如 /compact) 标签与描述本地化 ----------------
+    _slash_pat = r'([\w$]+)=\(\{item:a,isSelected:b,setSelected:c,selectAndClose:[^}]+\}\)=>\{var\s+([\w$]+)=a\.getRenderInfo\(\),([\w$]+)=a\.queryMatches;if\(!\2\)return null;var\s+([\w$]+)=\2\.label,([\w$]+)=\2\.icon,([\w$]+)=\2\.description,[^;]+;'
+    _sm = re.search(_slash_pat, content)
     if os.environ.get("CHM_NO_INJECT"):
         pass
-    elif slash_target in content:
-        content = content.replace(slash_target, slash_replacement)
-        print("Successfully injected slash command (compact, etc.) label & description localizer!")
+    elif _sm:
+        _comp, _info, _query, _lbl, _icon, _desc = _sm.groups()
+        _slash_matched = _sm.group(0)
+        _slash_inject = f'try{{var _cm={{"compact":{{n:"压缩会话 (/compact)",d:"压缩会话历史以释放上下文窗口空间"}},"/compact":{{n:"压缩会话 (/compact)",d:"压缩会话历史以释放上下文窗口空间"}},"goal":{{n:"全自动目标 (/goal)",d:"执行长耗时任务直到目标完全达成为止"}},"/goal":{{n:"全自动目标 (/goal)",d:"执行长耗时任务直到目标完全达成为止"}},"plan":{{n:"制定实施计划 (/plan)",d:"在执行前生成分步实施计划文档"}},"/plan":{{n:"制定实施计划 (/plan)",d:"在执行前生成分步实施计划文档"}},"browser":{{n:"浏览器交互 (/browser)",d:"进行网页浏览与交互"}},"/browser":{{n:"浏览器交互 (/browser)",d:"进行网页浏览与交互"}},"schedule":{{n:"定时调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"}},"/schedule":{{n:"定时调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"}},"grill-me":{{n:"深度对齐 (/grill-me)",d:"通过互动访谈，在方案细节上严格对齐"}},"/grill-me":{{n:"深度对齐 (/grill-me)",d:"通过互动访谈，在方案细节上严格对齐"}},"teamwork-preview":{{n:"团队协作预览 (/teamwork-preview)",d:"多智能体团队协作预览"}},"/teamwork-preview":{{n:"团队协作预览 (/teamwork-preview)",d:"多智能体团队协作预览"}},"learn":{{n:"模式学习 (/learn)",d:"将当前行为持久化记录为技能"}},"/learn":{{n:"模式学习 (/learn)",d:"将当前行为持久化记录为技能"}},"boost":{{n:"深度增强 (/boost)",d:"启用多视角深度思考、战略规划与严格验证"}},"/boost":{{n:"深度增强 (/boost)",d:"启用多视角深度思考、战略规划与严格验证"}}}};if({_lbl}&&_cm[{_lbl}.toLowerCase()]){{var _target=_cm[{_lbl}.toLowerCase()];{_lbl}=_target.n;if(_target.d){{if(typeof {_desc}==="object"&&{_desc}){{{_desc}.text=_target.d;{_desc}.rtl=!1;}}else{{{_desc}={{text:_target.d,rtl:!1}};}}}}}}}}catch(_e){{}};'
+        content = content.replace(_slash_matched, _slash_matched + _slash_inject)
+        print("Successfully injected slash command (compact, etc.) label & description localizer via dynamic AST/regex!")
     else:
-        print("[!] Warning: slash_target not found in bundle!")
+        print("[!] Warning: slash component pattern not found in bundle!")
 
     # ---------------- 注入设置侧边栏原生中文 label ----------------
     zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Tab",label:"代码补全 (Tab)"},{screen:"Editor",label:"编辑器配置"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
