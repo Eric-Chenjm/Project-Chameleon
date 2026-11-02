@@ -94,7 +94,7 @@ PROTECT_PATTERNS = [
     # 9) 设置配置节注册表 Map Key 保护
     (r'(new\s*Map\s*\(\s*\[\s*\[\s*)(' + _STR_D + r')(?=\s*,\s*\{\s*sections\s*:)', "设置Map首Key"),
     (r'(\]\s*,\s*\[\s*)(' + _STR_D + r')(?=\s*,\s*\{\s*sections\s*:)', "设置Map配置Key"),
-    (r'(,\s*\[\s*)("Appearance"|"General"|"Project 4K"|"Browser"|"Account"|"Customizations"|"Notifications")(?=\s*,)', "设置Map配置Key"),
+    (r'(,\s*\[\s*)("Appearance"|"General"|"Project 4K"|"Browser"|"Account"|"Customizations"|"Notifications"|"Shortcuts")(?=\s*,)', "设置Map配置Key"),
     # 9.1) 查找/集合/存储/编码类调用的实参一律视为程序标识
     (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_D + r')(?=\s*[,)])', "查找调用实参"),
     (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_S + r')(?=\s*[,)])', "查找调用实参"),
@@ -310,6 +310,38 @@ def main():
     # Define string translation mapping
     # Note: We must be very precise to match JSON property keys, arrays, or JSX definitions
     translations = {
+        "Add Shortcut": "添加快捷键",
+        "Edit Shortcut": "编辑快捷键",
+        "Remove Shortcut": "移除快捷键",
+        "Reset All to Defaults": "全部重置为默认值",
+        "Reset to Default": "重置为默认值",
+        "Stop Editing": "完成编辑",
+        "Background Commands": "后台命令",
+        "Browser Subagent": "浏览器子智能体",
+        "Choose where links open by default when clicked.": "选择点击链接时的默认打开位置。",
+        "Could not create Cog workspace": "无法创建 Cog 工作区",
+        "Delete All Remote Agents Data": "删除所有远程智能体数据",
+        "Delete All Remote Agents Data?": "是否删除所有远程智能体数据？",
+        "Remote Agents Data": "远程智能体数据",
+        "Disabled. Open Details to finish setup or enable.": "已禁用。打开详情以完成配置或启用。",
+        "Sign in to finish setting up this plugin.": "登录以完成此插件的配置。",
+        "Enable New Themes": "启用新实验主题",
+        "Use Google Sans instead of the default Inter typeface": "使用 Google Sans 代替默认的 Inter 字体",
+        "Use the experimental visual themes instead of standard presets": "使用实验性视觉主题代替标准预设",
+        "Failed to create cloud project": "创建云项目失败",
+        "Local Checkout": "本地检出",
+        "Move Conversation Down": "会话向下移动",
+        "Move Conversation Up": "会话向上移动",
+        "No plugin loads from this folder.": "未从此文件夹加载到任何插件。",
+        "Open Conversation in New Tab": "在新标签页中打开会话",
+        "Open Links In": "链接打开方式",
+        "Open in Side Panel": "在侧边栏面板中打开",
+        "Reopen Closed Tab": "重新打开已关闭的标签页",
+        "This Computer": "本地计算机",
+        "VCS used when creating a new workspace, including workspaces generated based off your initial prompt.": "创建新工作区时使用的版本控制系统（包括根据初始提示生成的工作区）。",
+        "View site information": "查看网站信息",
+        "Your information (for example, passwords or credit card numbers) is private when it is sent to this site.": "您的敏感信息（例如密码或信用卡号）在发送到该网站时受隐私安全保护。",
+
         "Add screenshot to conversation": "添加屏幕截图到对话",
         "CitC Workspace (Do not use for PII/NTK data)": "CitC 工作区（请勿用于 PII/NTK 数据）",
         "Cog Workspace (Do not use for PII/NTK data)": "Cog 工作区（请勿用于 PII/NTK 数据）",
@@ -3597,7 +3629,7 @@ def main():
         print("[!] Warning: slash component pattern not found in bundle!")
 
     # ---------------- 注入设置侧边栏原生中文 label ----------------
-    zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Tab",label:"代码补全 (Tab)"},{screen:"Editor",label:"编辑器配置"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
+    zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Shortcuts",label:"快捷键设置"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Tab",label:"代码补全 (Tab)"},{screen:"Editor",label:"编辑器配置"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
     # 匹配可能包含英文或已汉化标签的 ogb
     # 变量名每版都会变（2.24 ogb / 2.25 Cgb），按结构动态定位
     ogb_pattern = r'var ([\w$]+)=\[\{screen:"General"\}[^\]]{0,1200}?\{screen:"Regroup Google3 Chats"\}\]'
