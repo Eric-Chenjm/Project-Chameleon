@@ -14444,7 +14444,7 @@ E)??(V==="newTab__empty"?void 0:Q.find(ea=>ea.id===V)??Q.find(ea=>!z.has(ea.id))
 fitContent:!0,scrollIntoViewQuery:K?'[data-testid="aux-pane-pending-terminal-tab"]':S?`[data-tab-id="${S}"]`:void 0},x.map(fa=>{var {hasClosableOthers:ea,hasClosableToRight:X}=pa(fa.id);return A.createElement(p7,{key:fa.id,tab:fa,treeId:a,isActive:fa.id===S,isPersistent:!1,isPinned:!0,hasClosableOthers:ea,hasClosableToRight:X,onClick:ja=>{D(fa.id,ja)},onDoubleClick:()=>{t(jqa({treeId:a,tabId:fa.id}))},onClose:ja=>{W(fa.id,ja)},onTogglePin:ja=>{C(fa,ja)},onCloseOtherTabs:()=>{ca(fa.id)},onCloseTabsToRight:()=>
 {da(fa.id)}})}),I.map((fa,ea)=>{ea=O.getItemProps(ea);var {hasClosableOthers:X,hasClosableToRight:ja}=pa(fa.id);return A.createElement(p7,{key:fa.id,tab:fa,treeId:a,isActive:fa.id===S,isBeingDragged:O.draggedItemId===fa.id,isPersistent:!1,isPinned:!1,hasClosableOthers:X,hasClosableToRight:ja,onClick:la=>{O.wasDragged||D(fa.id,la)},onDoubleClick:()=>{t(jqa({treeId:a,tabId:fa.id}))},onClose:la=>{W(fa.id,la)},onTogglePin:la=>{C(fa,la)},onCloseOtherTabs:()=>{ca(fa.id)},onCloseTabsToRight:()=>{da(fa.id)},
 dragProps:h?void 0:{...ea,onPointerDown:la=>{O.onPointerDown(fa.id,la)}}})}),R.map(fa=>{var {hasClosableOthers:ea,hasClosableToRight:X}=pa(fa.id);return A.createElement(p7,{key:fa.id,tab:fa,treeId:a,isActive:fa.id===S,isPersistent:!1,isPinned:!1,hasClosableOthers:ea,hasClosableToRight:X,onClick:ja=>{D(fa.id,ja)},onClose:ja=>{W(fa.id,ja)},onCloseOtherTabs:()=>{ca(fa.id)},onCloseTabsToRight:()=>{da(fa.id)}})}),K&&A.createElement($vc,null)),Q.length>0&&A.createElement(A.Fragment,null,A.createElement(W1,
-{iconName:"add",className:"shrink-0",dataTestId:"aux-pane-new-tab-button",dataTooltipId:"aux-pane-new-tab-tooltip","aria-label":"New tab",state:T?"normal":"selected",onClick:q}),A.createElement(iA,{id:"aux-pane-new-tab-tooltip",delayShow:300,place:"bottom"},"新建标签页",r&&A.createElement("span",{className:"ml-1 text-muted-foreground"},r)))),A.createElement("div",{className:"flex-grow overflow-hidden"},T?A.createElement("div",{className:"h-full w-full"},A.createElement(Kvc,{key:T.id,treeId:a,tabId:T.id,
+{iconName:"add",className:"shrink-0",dataTestId:"aux-pane-new-tab-button",dataTooltipId:"aux-pane-new-tab-tooltip","aria-label":"新建标签页",state:T?"normal":"selected",onClick:q}),A.createElement(iA,{id:"aux-pane-new-tab-tooltip",delayShow:300,place:"bottom"},"新建标签页",r&&A.createElement("span",{className:"ml-1 text-muted-foreground"},r)))),A.createElement("div",{className:"flex-grow overflow-hidden"},T?A.createElement("div",{className:"h-full w-full"},A.createElement(Kvc,{key:T.id,treeId:a,tabId:T.id,
 tab:U})):A.createElement(Zvc,{treeId:a,isPaneOpen:Y})),c&&(0,Vw.createPortal)(A.createElement("div",{className:"overflow-hidden rounded-lg border border-border",style:O.getOverlayStyle()},c),document.body))};function awc(){return NH()?A.createElement(Xvc,null):A.createElement(W$b,null)};function bwc({currentWidthPercent:a,viewportWidthPx:b,leftSidebarPx:c}){b-=c;if(b<=0)return Math.max(a,60);b=Math.round(Math.min(1024,Math.min(.68*b,b-366))/b*100*100)/100;return b>a?b:a}
 function cwc({auxPaneWidth:a,setAuxPaneWidth:b,leftSidebarPx:c=0,isAuxPaneDocked:d,treeId:f,redesignEnabled:g}){var h=!!Fj().get("browserAuxPane"),k=ll(q=>f?(g?q?.auxPaneV2?Mo(q,f):void 0:q?.auxPane?kp(q,f):void 0)?.customPaneKey==="browser":!1),l=(0,A.useRef)(!1),m=(0,A.useRef)(!1),n=(0,A.useCallback)(q=>{l.current=!0;b(q)},[b]);(0,A.useLayoutEffect)(()=>{if(h&&d&&k&&!l.current&&!m.current){m.current=!0;var q=bwc({currentWidthPercent:a,viewportWidthPx:window.innerWidth,leftSidebarPx:c});q>a&&b(q)}},
 [h,d,k,a,c,b]);return n};function dwc(a,b=0){var c=kl(),d=RW(),f=ll(qqa),g=(0,A.useRef)(f);g.current=f;(0,A.useLayoutEffect)(()=>{var h=()=>{var k=Wpa({isAuxPaneMaximized:d,auxPaneWidthPercent:a,viewportWidthPx:window.innerWidth,leftSidebarPx:b});k!==g.current&&(g.current=k,c(pqa(k)))};h();window.addEventListener("resize",h);return()=>{window.removeEventListener("resize",h)}},[c,d,a,b])};function ewc({cascadeId:a,treeId:b,sections:c,onOpened:d}){return A.createElement("div",{className:"divide-y divide-border"},c.includes("subagents")&&A.createElement("div",{"data-testid":"running-items-subagents",className:"p-1"},A.createElement(X6,{label:"子智能体"}),A.createElement(jqc,{cascadeId:a,treeId:b,visibleCount:"all",hideIdle:!0,source:"status_line_card",onOpened:d})),c.includes("backgroundTasks")&&A.createElement("div",{"data-testid":"running-items-tasks",className:"p-1"},A.createElement(X6,
@@ -20910,55 +20910,63 @@ groups:[{type:"preset",key:"agentEdits"}]}]}},gobCog:void 0,gobRepo:void 0,jj:vo
     } catch(e) { return false; }
   };
 
+  const translateElementAttributes = (node) => {
+    try {
+      if (!node || node.nodeType !== 1) return;
+      const tag = (node.nodeName || '').toUpperCase();
+      if (tag === 'SCRIPT' || tag === 'STYLE') return;
+
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        const ph = node.getAttribute('placeholder');
+        if (ph && ph.trim().length > 0 && ph.length <= 120) {
+          const newPh = translateText(ph);
+          if (newPh !== ph) node.setAttribute('placeholder', newPh);
+        }
+        const tt = node.getAttribute('title');
+        if (tt && tt.trim().length > 0 && tt.length <= 120) {
+          const newTt = translateText(tt);
+          if (newTt !== tt) node.setAttribute('title', newTt);
+        }
+        return;
+      }
+
+      const attrs = ['aria-label', 'title', 'data-tooltip'];
+      for (let i = 0; i < attrs.length; i++) {
+        const attr = attrs[i];
+        const val = node.getAttribute(attr);
+        if (val && val.trim().length > 0 && val.length <= 120) {
+          const newVal = translateText(val);
+          if (newVal !== val) {
+            node.setAttribute(attr, newVal);
+          }
+        }
+      }
+    } catch(e) {}
+  };
+
   const safeTranslateNode = (node) => {
     try {
-      if (!node || translatedNodes.has(node)) return;
-      translatedNodes.add(node);
-
+      if (!node) return;
       if (node.nodeType === 3) { // TEXT_NODE
-         if (isDynamicContentZone(node)) return;
-         const text = node.textContent;
-         if (text && text.trim().length > 0 && isSafeToRewrite(node)) {
-           const newText = translateText(text);
-           if (newText !== text) {
-             window.requestAnimationFrame(() => {
-               try {
-                 if (node.textContent === text) {
-                   node.textContent = newText;
-                 }
-               } catch(e) {}
-             });
-           }
-         }
+        if (translatedNodes.has(node)) return;
+        translatedNodes.add(node);
+        if (isDynamicContentZone(node)) return;
+        const text = node.textContent;
+        if (text && text.trim().length > 0 && isSafeToRewrite(node)) {
+          const newText = translateText(text);
+          if (newText !== text) {
+            window.requestAnimationFrame(() => {
+              try {
+                if (node.textContent === text) {
+                  node.textContent = newText;
+                }
+              } catch(e) {}
+            });
+          }
+        }
       } else if (node.nodeType === 1) { // ELEMENT_NODE
-         const tag = (node.nodeName || '').toUpperCase();
-         if (tag === 'INPUT' || tag === 'TEXTAREA') {
-             const ph = node.getAttribute('placeholder');
-             if (ph && ph.trim().length > 0 && ph.length <= 120) {
-                 const newPh = translateText(ph);
-                 if (newPh !== ph) node.setAttribute('placeholder', newPh);
-             }
-             const tt = node.getAttribute('title');
-             if (tt && tt.trim().length > 0 && tt.length <= 120) {
-                 const newTt = translateText(tt);
-                 if (newTt !== tt) node.setAttribute('title', newTt);
-             }
-             return;
-         }
-         if (tag !== 'SCRIPT' && tag !== 'STYLE') {
-             const attrs = ['aria-label', 'title', 'data-tooltip'];
-             for (let i = 0; i < attrs.length; i++) {
-                 const attr = attrs[i];
-                 const val = node.getAttribute(attr);
-                 if (val && val.trim().length > 0 && val.length <= 120) {
-                     const newVal = translateText(val);
-                     if (newVal !== val) {
-                         node.setAttribute(attr, newVal);
-                     }
-                 }
-             }
-             node.childNodes.forEach(safeTranslateNode);
-         }
+        translateElementAttributes(node);
+        node.childNodes.forEach(safeTranslateNode);
       }
     } catch(e) {}
   };
@@ -20969,13 +20977,20 @@ groups:[{type:"preset",key:"agentEdits"}]}]}},gobCog:void 0,gobRepo:void 0,jj:vo
         const observer = new MutationObserver((mutations) => {
           try {
             mutations.forEach((mutation) => {
-              if (mutation.addedNodes) {
+              if (mutation.type === 'attributes') {
+                translateElementAttributes(mutation.target);
+              } else if (mutation.addedNodes) {
                 mutation.addedNodes.forEach(safeTranslateNode);
               }
             });
           } catch(e) {}
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['aria-label', 'title', 'data-tooltip', 'placeholder']
+        });
       } catch(e) {}
   };
   

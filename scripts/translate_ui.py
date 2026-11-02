@@ -2359,6 +2359,7 @@ def main():
         "Close Other Tabs": "关闭其他标签页",
         "Close Tabs to the Right": "关闭右侧标签页",
         "New Tab": "新建标签页",
+    "New tab": "新建标签页",
         "Next Pane Tab": "下一个窗格标签页",
         "Previous Pane Tab": "上一个窗格标签页",
         "Next Aux Pane Tab": "下一个辅助窗格标签页",
@@ -4092,55 +4093,63 @@ def main():
     } catch(e) { return false; }
   };
 
+  const translateElementAttributes = (node) => {
+    try {
+      if (!node || node.nodeType !== 1) return;
+      const tag = (node.nodeName || '').toUpperCase();
+      if (tag === 'SCRIPT' || tag === 'STYLE') return;
+
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        const ph = node.getAttribute('placeholder');
+        if (ph && ph.trim().length > 0 && ph.length <= 120) {
+          const newPh = translateText(ph);
+          if (newPh !== ph) node.setAttribute('placeholder', newPh);
+        }
+        const tt = node.getAttribute('title');
+        if (tt && tt.trim().length > 0 && tt.length <= 120) {
+          const newTt = translateText(tt);
+          if (newTt !== tt) node.setAttribute('title', newTt);
+        }
+        return;
+      }
+
+      const attrs = ['aria-label', 'title', 'data-tooltip'];
+      for (let i = 0; i < attrs.length; i++) {
+        const attr = attrs[i];
+        const val = node.getAttribute(attr);
+        if (val && val.trim().length > 0 && val.length <= 120) {
+          const newVal = translateText(val);
+          if (newVal !== val) {
+            node.setAttribute(attr, newVal);
+          }
+        }
+      }
+    } catch(e) {}
+  };
+
   const safeTranslateNode = (node) => {
     try {
-      if (!node || translatedNodes.has(node)) return;
-      translatedNodes.add(node);
-
+      if (!node) return;
       if (node.nodeType === 3) { // TEXT_NODE
-         if (isDynamicContentZone(node)) return;
-         const text = node.textContent;
-         if (text && text.trim().length > 0 && isSafeToRewrite(node)) {
-           const newText = translateText(text);
-           if (newText !== text) {
-             window.requestAnimationFrame(() => {
-               try {
-                 if (node.textContent === text) {
-                   node.textContent = newText;
-                 }
-               } catch(e) {}
-             });
-           }
-         }
+        if (translatedNodes.has(node)) return;
+        translatedNodes.add(node);
+        if (isDynamicContentZone(node)) return;
+        const text = node.textContent;
+        if (text && text.trim().length > 0 && isSafeToRewrite(node)) {
+          const newText = translateText(text);
+          if (newText !== text) {
+            window.requestAnimationFrame(() => {
+              try {
+                if (node.textContent === text) {
+                  node.textContent = newText;
+                }
+              } catch(e) {}
+            });
+          }
+        }
       } else if (node.nodeType === 1) { // ELEMENT_NODE
-         const tag = (node.nodeName || '').toUpperCase();
-         if (tag === 'INPUT' || tag === 'TEXTAREA') {
-             const ph = node.getAttribute('placeholder');
-             if (ph && ph.trim().length > 0 && ph.length <= 120) {
-                 const newPh = translateText(ph);
-                 if (newPh !== ph) node.setAttribute('placeholder', newPh);
-             }
-             const tt = node.getAttribute('title');
-             if (tt && tt.trim().length > 0 && tt.length <= 120) {
-                 const newTt = translateText(tt);
-                 if (newTt !== tt) node.setAttribute('title', newTt);
-             }
-             return;
-         }
-         if (tag !== 'SCRIPT' && tag !== 'STYLE') {
-             const attrs = ['aria-label', 'title', 'data-tooltip'];
-             for (let i = 0; i < attrs.length; i++) {
-                 const attr = attrs[i];
-                 const val = node.getAttribute(attr);
-                 if (val && val.trim().length > 0 && val.length <= 120) {
-                     const newVal = translateText(val);
-                     if (newVal !== val) {
-                         node.setAttribute(attr, newVal);
-                     }
-                 }
-             }
-             node.childNodes.forEach(safeTranslateNode);
-         }
+        translateElementAttributes(node);
+        node.childNodes.forEach(safeTranslateNode);
       }
     } catch(e) {}
   };
@@ -4151,13 +4160,20 @@ def main():
         const observer = new MutationObserver((mutations) => {
           try {
             mutations.forEach((mutation) => {
-              if (mutation.addedNodes) {
+              if (mutation.type === 'attributes') {
+                translateElementAttributes(mutation.target);
+              } else if (mutation.addedNodes) {
                 mutation.addedNodes.forEach(safeTranslateNode);
               }
             });
           } catch(e) {}
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['aria-label', 'title', 'data-tooltip', 'placeholder']
+        });
       } catch(e) {}
   };
   
