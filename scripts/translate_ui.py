@@ -2499,6 +2499,11 @@ def main():
         "Upgrade Plan": "升级订阅计划",
         "QUOTA_EXHAUSTED": "配额已耗尽",
         "RATE_LIMIT_EXCEEDED": "已超出速率频率限制",
+    "Scroll turns up": "向上滚动轮次",
+    "Scroll turns down": "向下滚动轮次",
+    "Message input": "消息输入框",
+    "Conversation Log": "会话日志",
+    "Biomolecular Structure Viewer": "生物分子结构查看器",
         "Please verify your account to continue using": "请验证您的账户身份以继续使用",
         "text:\"Shortcuts\"": "text:\"键盘快捷键\"",
         "text:\"Provide Feedback\"": "text:\"提供使用反馈\"",
@@ -3852,6 +3857,11 @@ def main():
     "Upgrade Plan": "升级订阅计划",
     "QUOTA_EXHAUSTED": "配额已耗尽",
     "RATE_LIMIT_EXCEEDED": "已超出速率频率限制",
+    "Scroll turns up": "向上滚动轮次",
+    "Scroll turns down": "向下滚动轮次",
+    "Message input": "消息输入框",
+    "Conversation Log": "会话日志",
+    "Biomolecular Structure Viewer": "生物分子结构查看器",
   };;;
 
 
@@ -3886,6 +3896,12 @@ def main():
     }
     if (/^\d+ files? changed$/.test(t)) {
       return text.replace(/^(\d+) files? changed$/, "$1 个文件已更改");
+    }
+    if (/^\d+(mo|[smhd])$/.test(t)) {
+      return text.replace(/^(\d+)(mo|[smhd])$/, (m, n, u) => {
+        const units = { s: "秒前", m: "分钟前", h: "小时前", d: "天前", mo: "个月前" };
+        return `${n} ${units[u] || u}`;
+      });
     }
     if (/^\d+(mo|[smhd]) ago$/.test(t)) {
       return text.replace(/^(\d+)(mo|[smhd]) ago$/, (m, n, u) => {
@@ -4081,9 +4097,8 @@ def main():
       if (!node || translatedNodes.has(node)) return;
       translatedNodes.add(node);
 
-      if (isDynamicContentZone(node)) return;
-
       if (node.nodeType === 3) { // TEXT_NODE
+         if (isDynamicContentZone(node)) return;
          const text = node.textContent;
          if (text && text.trim().length > 0 && isSafeToRewrite(node)) {
            const newText = translateText(text);
