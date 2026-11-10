@@ -65,6 +65,9 @@ PROTECT_PATTERNS = [
     # 1) 与后端 / 键盘事件 / 存储值做比较：x === "RUNNING"、a.key === "Tab"
     (r'((?<!["\'\\])(?:===|!==|==)\s*)(' + _STR_D + r')', "比较"),
     (r'((?<!["\'\\])(?:===|!==|==)\s*)(' + _STR_S + r')', "比较"),
+    # 2.1) 三元运算回退异常名标识：Y instanceof DOMException ? Y.name : "Error"
+    (r'(instanceof\s+DOMException\s*\?\s*[\w$.]+\s*:\s*)(' + _STR_D + r')', "DOMException回退"),
+    (r'(instanceof\s+DOMException\s*\?\s*[\w$.]+\s*:\s*)(' + _STR_S + r')', "DOMException回退"),
     # 2) switch-case 分支值：case "IDLE":
     (r'(\bcase\s*)(' + _STR_D + r')(?=\s*:)', "switch case"),
     (r'(\bcase\s*)(' + _STR_S + r')(?=\s*:)', "switch case"),
@@ -394,7 +397,7 @@ def main():
         "Edit": "编辑",
         "Enable": "启用",
         "Enabled": "已启用",
-        "Error": "错误",
+        # "Error": "错误" (由 dynamicDict 动态安全拦截，防止误伤 JS 异常标识)
         "Expand": "展开",
         "Expand All": "全部展开",
         "Export": "导出",
@@ -3122,6 +3125,291 @@ def main():
     "title:Terminal": "终端控制台",
     "title:Terminal Commands": "终端命令配置",
     "title:Terminal & Tooling Permissions": "终端与工具执行权限",
+        # --- 2.30.0 Audit Merged Entries ---
+        "label:Browser": "浏览器设置",
+        "title:Browser": "浏览器设置",
+        "description:Configure built-in browser, link opening, and browser subagent preferences.": "配置内置浏览器、链接打开方式及浏览器子智能体偏好设置。",
+        "title:Side Panel Preview": "侧边栏面板预览",
+        "title:Built-in Browser": "内置浏览器",
+        "title:Browser Subagent": "浏览器子智能体",
+        "label:Open Links In": "默认链接打开方式",
+        "description:Choose where links open by default when clicked.": "选择点击链接时的默认打开位置。",
+        "label:Download Location": "下载保存位置",
+        "Folder where files downloaded in the built-in browser are saved.": "内置浏览器中下载的文件所保存的本地文件夹。",
+        "CitC workspace paths are world-readable and permanently snapshotted. Choose a local folder outside CitC.": "CitC 工作区路径全员可读且会被永久创建快照。请选择 CitC 目录之外的本地文件夹。",
+        "label:Browsing History": "浏览历史记录",
+        "Clear visited URLs and autocomplete suggestions from side panel preview.": "清除侧边栏面板预览中已访问的网址与自动补全建议。",
+        "Clear visited URLs and autocomplete suggestions from the built-in browser.": "清除内置浏览器中已访问的网址与自动补全建议。",
+        "label:Browser Actuation Rules": "浏览器操作授权规则",
+        "Configure allowed and denied URLs for the browser subagent. It runs in the built-in browser, so no separate browser install is needed.": "为浏览器子智能体配置允许和拒绝访问的网址。其运行在内置浏览器中，无需单独安装外部浏览器。",
+        "label:Browser Javascript Execution Policy": "浏览器 JavaScript 执行策略",
+        "description:Controls whether the agent can run custom JavaScript to automate complex browser actions.": "控制智能体是否可以运行自定义 JavaScript 来自动化复杂的浏览器操作。",
+        "Prompt for approval before running browser scripts.": "在运行浏览器脚本前弹出提示请求您的批准。",
+        "label:Enable Browser Tools": "启用浏览器工具",
+        "description:Let the agent use browser tools to open URLs, read web pages, and interact with browser content. This gives the agent access to important (and often critical) knowledge and methods of validation, but any browser integration does increase exposure to external malicious parties for security exploits.": "允许智能体使用浏览器工具打开网址、读取网页并与网页内容进行交互。这能让智能体获取重要的（通常是关键的）知识与验证手段，但任何浏览器集成都会增加遭受外部恶意攻击的安全风险。",
+        "title:Browser Actuation Permissions": "浏览器操作授权权限",
+        "label:Execute URLs": "执行网址访问",
+        "description:Allow/deny agent browser actuation access to specific URLs.": "允许或拒绝智能体浏览器对特定网址的操作访问权限。",
+        "placeholder:e.g., https://example.com": "例如：https://example.com",
+        "label:Download files": "下载文件",
+        "description:Allow/deny agent browser file downloads from specific sites.": "允许或拒绝智能体浏览器从特定站点下载文件。",
+        "placeholder:e.g., example.com": "例如：example.com",
+        "title:Organization Allowed Domains (Read-Only)": "组织白名单域名 (只读)",
+        "title:Commands Outside Sandbox": "沙盒外命令执行权限",
+        "label:Commands Outside Sandbox": "沙盒外命令执行",
+        "description:Allow/deny agent command execution outside the sandbox.": "允许或拒绝智能体在沙盒之外执行命令。",
+        "description:Configure allowed commands outside the sandbox.": "配置允许在沙盒之外执行的命令白名单。",
+        "label:Read URLs": "读取网址",
+        "description:Allow/deny agent read access to specific URLs or domains.": "允许或拒绝智能体对特定网址或域名的读取访问权限。",
+        "description:Configure allowed and denied URLs for reading.": "配置允许和拒绝读取的网址规则。",
+        "label:Network Access Rules": "网络访问授权规则",
+        "title:Network Permissions": "网络访问权限",
+        "label:Sandbox Allow Network": "沙盒网络外联许可",
+        "description:Allow sandboxed commands to make network requests.": "允许沙盒内执行的命令发起外部网络请求。",
+        "label:Enable Terminal Sandbox": "启用终端沙盒",
+        "description:Run terminal commands with sandbox restrictions.": "在沙盒安全隔离限制下运行终端命令。",
+        "label:Enable Sandbox Mode": "启用沙盒模式",
+        "description:Restricts agent tools to a secure, isolated local sandbox.": "将智能体工具限制在安全的本地隔离沙盒中运行。",
+        "title:Browser: you took over": "浏览器：您已接管控制权",
+        "label:Browser Subagent Viewer": "浏览器子智能体查看器",
+        "label:Browser Use": "浏览器自动化操作",
+        "label:Browser actions": "浏览器动作",
+        "label:Browser downloads": "浏览器文件下载",
+        "label:Browser tools (browser_.*)": "浏览器工具 (browser_.*)",
+        "description:Hook will only trigger if the tool name starts with browser_.": "仅当工具名称以 browser_ 开头时才会触发钩子 (Hook)。",
+        "description:Replace the default browser right-click menu with quick actions.": "使用快捷操作菜单替换系统默认的浏览器右键菜单。",
+        "title:Project 4K": "Project 4K 界面",
+        "title:Terms of Service & Data Use": "服务条款与数据使用",
+        "AI coding agents are known to have certain security risks, including autonomous code execution, data exfiltration, prompt injection and supply chain risks. Ensure that you monitor and verify all actions taken by the agent.": "AI 编程智能体存在一定的安全风险，包括自主代码执行、数据泄露、提示词注入以及供应链安全风险。请务必监督并核验智能体所执行的所有操作。",
+        "does not collect any of your prompts, content, or model responses but does collect general usage patterns such as feature adoption and active user counts (\\u201cproduct analytics\\u201d). Telemetry data will be handled in accordance with the Google Privacy Policy.": "不会收集您的任何提示词、代码内容或模型回复，但会收集通用使用模式，例如功能采用率与活跃用户数（“产品分析数据”）。遥测数据将根据《Google 隐私权政策》进行处理。",
+        "does not collect any of your prompts, content, or model responses, but will still collect general usage patterns (e.g., feature adoption, active user counts).": "不会收集您的任何提示词、代码内容或模型回复，但仍会收集通用使用模式（例如功能采用率、活跃用户数）。",
+        "Terms and Privacy:": "条款与隐私权政策：",
+        "One last thing before getting started\\u2026": "正式开始前的最后一件事…",
+        "A few things to know, and a couple settings to review.": "几点需知事项与若干偏好设置需您确认。",
+        "title:Optimized for you": "专为您优化定制",
+        "title:Built to help, not hurt": "旨在赋能，远离侵害",
+        "Automated safeguards help to protect your conversations from insecure or unsafe content. That being said, users should be aware of potential agentic risks, including data exfiltration.": "自动化安全防线有助于保护您的对话免受不安全或恶意内容的侵害。尽管如此，用户仍应警惕潜在的智能体代理风险，包括数据外泄风险。",
+        "title:You are in control": "掌控权始终在您手中",
+        "title:Stay up to date.": "保持最新资讯。",
+        "Allow Google to collect and use your Interactions data, subject to the": "允许 Google 收集并使用您的交互数据，受以下条款约束：",
+        "Google Privacy Policy": "Google 隐私权政策",
+        "You can control this from your settings at any point.": "您随时可以在设置中更改此项。",
+        "title:Getting started with Google Antigravity": "Google Antigravity 新手入门指南",
+        "Here's how you and your agents work together": "以下是您与智能体协作的方式",
+        "title:Build with one agent or a team": "由单一智能体或智能体团队构建",
+        "title:Review plans and walkthroughs": "评审计划与演示巡查",
+        "title:Set the rules, define the boundaries.": "设定规则，界定边界。",
+        "title:Couldn't load Google Drive link title": "无法获取 Google Drive 链接标题",
+        "You don't have access to this Google Drive file, so its title couldn't be added. The link was kept as-is.": "您没有此 Google Drive 文件的访问权限，因此无法添加其标题。链接已按原样保留。",
+        "Timed out fetching the Google Drive file's title. The link was kept as-is.": "获取 Google Drive 文件标题超时。链接已按原样保留。",
+        "Couldn't fetch the Google Drive file's title. The link was kept as-is.": "无法获取该 Google Drive 文件的标题。链接已按原样保留。",
+        "title:Uploading to Google Drive\\u2026": "正在上传至 Google Drive…",
+        "title:Uploaded to Google Drive": "已上传至 Google Drive",
+        "Link copied to clipboard.": "链接已复制到剪贴板。",
+        "Select Google Drive files or folders": "选择 Google Drive 文件或文件夹",
+        "label:Search Google Drive": "搜索 Google Drive",
+        "Docs, Sheets, Slides, and folders": "Google 文档、表格、幻灯片和文件夹",
+        "title:Connected Google Drive and GitHub resources": "已关联的 Google Drive 与 GitHub 资源",
+        "Send a message in the main conversation first to start a side question": "请先在主对话中发送消息以开启侧边提问",
+        "Enter a side question after /btw": "请在 /btw 后输入侧边提问内容",
+        "Cannot promote a subagent's side question": "无法提升子智能体的侧边提问",
+        "Promote to Conversation": "提升为主对话",
+        "Promote to conversation": "提升为主对话",
+        "Ask a side question without interrupting the main conversation": "提出侧边问题，无需打断主对话",
+        "Help me self-troubleshoot an issue, configure Jetski, or file a bug or feature request from this conversation.": "帮助我自助排查问题、配置 Jetski，或从当前对话提交 Bug 与功能建议。",
+        "Failed to send side question": "发送侧边提问失败",
+        "Failed to start side question": "启动侧边提问失败",
+        "Failed to delete side question": "删除侧边提问失败",
+        "title:\"Delete Side Question\"": "title:\"删除侧边提问\"",
+        "Are you sure you want to delete this side question? This action cannot be undone.": "您确定要删除此侧边提问吗？此操作无法撤销。",
+        "Stop Side Question": "停止侧边提问",
+        "Stop side question": "停止侧边提问",
+        "aria-label:\"Stop side question\"": "aria-label:\"停止侧边提问\"",
+        "aria-label:\"Promote to conversation\"": "aria-label:\"提升为主对话\"",
+        "aria-label:\"Delete side question\"": "aria-label:\"删除侧边提问\"",
+        "aria-label:\"Resize side question panel\"": "aria-label:\"调整侧边提问面板大小\"",
+        "title:\"Drag to resize, double-click to reset\"": "title:\"拖动调整大小，双击重置\"",
+        "aria-label:\"Previous side question\"": "aria-label:\"上一条侧边提问\"",
+        "tooltip:\"Previous question\"": "tooltip:\"上一条侧边提问\"",
+        "aria-label:\"Next side question\"": "aria-label:\"下一条侧边提问\"",
+        "tooltip:\"Next question\"": "tooltip:\"下一条侧边提问\"",
+        "aria-label:\"Minimize side question\"": "aria-label:\"最小化侧边提问\"",
+        "tooltip:\"Delete Side Question\"": "tooltip:\"删除侧边提问\"",
+        "Side question answered.": "侧边提问已回答。",
+        "title:\"New Side Question\"": "title:\"新侧边提问\"",
+        "accessibilityLabel:\"Side Question\"": "accessibilityLabel:\"侧边提问\"",
+        "aria-label:\"Reply to /help\"": "aria-label:\"回复 /help\"",
+        "Waiting for response... (Esc to minimize)": "正在等待回复... (按 Esc 最小化)",
+        "Reply to /help... (Esc to minimize)": "回复 /help... (按 Esc 最小化)",
+        "aria-label:\"Send reply\"": "aria-label:\"发送回复\"",
+        "tooltip:\"Send reply\"": "tooltip:\"发送回复\"",
+        "Copied to clipboard": "已复制到剪贴板",
+        "No model specified for Battle Mode, falling back to use current selected model": "未为对决模式指定模型，正在回退使用当前选定模型",
+        "label:\"Fork in Current Workspace\"": "label:\"在当前工作区派生\"",
+        "label:\"Fork in Shared Workspace\"": "label:\"在共享工作区派生\"",
+        "label:\"Fork in New Workspace\"": "label:\"在全新工作区派生\"",
+        "title:\"Creating worktree for the forked conversation...\"": "title:\"正在为派生对话创建工作树 (worktree)...\"",
+        "title:\"Creating workspace for the forked conversation...\"": "title:\"正在为派生对话创建工作区...\"",
+        "title:\"Creating the forked conversation...\"": "title:\"正在创建派生对话...\"",
+        "Canvas · written by your Chief of Staff · display only": "画布 · 由您的幕僚长编写 · 仅限查看",
+        "Canvas page · display only": "画布页面 · 仅限查看",
+        "title:\"Chief of Staff canvas\"": "title:\"幕僚长画布\"",
+        "title:\"Chief of Staff voice mode is active\"": "title:\"幕僚长语音模式已激活\"",
+        "message:\"Voice recording is unavailable while the Chief of Staff mic is on\"": "message:\"幕僚长麦克风开启期间无法进行语音录制\"",
+        "tooltip:\"Stop All Subagents\"": "tooltip:\"停止全部子智能体\"",
+        "tooltip:\"Stop Subagent\"": "tooltip:\"停止子智能体\"",
+        "content:\"Stop Subagent\"": "content:\"停止子智能体\"",
+        "ariaLabel:\"Stop subagent\"": "ariaLabel:\"停止子智能体\"",
+        "aria-label:\"Stop subagent\"": "aria-label:\"停止子智能体\"",
+        "tooltipContent:\"Stop Subagent\"": "tooltipContent:\"停止子智能体\"",
+        "text:\"Loading subagent...\"": "text:\"正在加载子智能体...\"",
+        "text:\"Subagent ended\"": "text:\"子智能体已结束\"",
+        "emptyText:\"No uploads\"": "emptyText:\"暂无上传文件\"",
+        "accessibilityLabel:\"Subagent Conversation\"": "accessibilityLabel:\"子智能体对话\"",
+        "aria-label:\"Collapse subagents\"": "aria-label:\"折叠子智能体\"",
+        "aria-label:\"Expand subagents\"": "aria-label:\"展开子智能体\"",
+        "Cannot start best-of-N mode while the agent is running": "智能体正在运行时无法启动最优选择 (Best-of-N) 模式",
+        "Messaging subagents isn't supported in remote conversations yet.": "远程对话中暂不支持与子智能体收发消息。",
+        "Configure allowed and denied URLs for the browser subagent (invoked with /browser). Requires": "配置浏览器子智能体（通过 /browser 调用）的允许与拒绝 URL。需要",
+        "Configure built-in browser, link opening, and browser subagent preferences.": "配置内置浏览器、链接打开方式以及浏览器子智能体偏好设置。",
+        "title:\"Subagents\"": "title:\"子智能体\"",
+        "title:\"Side Questions\"": "title:\"侧边提问\"",
+        "title:\"Background Tasks\"": "title:\"后台任务\"",
+        "title:\"Goals\"": "title:\"目标\"",
+        "label:\"Proceed with Plan\"": "label:\"按规划继续执行\"",
+        "label:\"Accept Step\"": "label:\"采纳步骤\"",
+        "label:\"Reject Step\"": "label:\"拒绝步骤\"",
+        "label:\"Comment on Selection\"": "label:\"评论选中内容\"",
+        "label:\"Don't show this for 2 days\"": "label:\"2 天内不再显示\"",
+        "Curated sets of plugins for common workflows and roles.": "针对常见工作流和角色的精选插件集。",
+        "Side Questions": "侧边提问",
+        "Side Question": "侧边提问",
+        "New Side Question": "新侧边提问",
+        "Full View": "完整视图",
+        "Workflow refs": "工作流引用",
+        "title:\"Open side-by-side view\"": "title:\"打开并排对比视图\"",
+        "tooltip:\"Stage change\"": "tooltip:\"暂存更改 (Stage)\"",
+        "tooltip:\"Unstage change\"": "tooltip:\"取消暂存更改 (Unstage)\"",
+        "tooltip:\"Discard unstaged changes\"": "tooltip:\"放弃未暂存更改\"",
+        "label:\"Uncommitted\"": "label:\"未提交更改\"",
+        "subtitle:\"Staged index changes and working tree changes\"": "subtitle:\"暂存区索引与工作树变更\"",
+        "label:\"Branch\"": "label:\"分支对比\"",
+        "label:\"Agent Edits\"": "label:\"智能体修改\"",
+        "subtitle:\"Files modified by the agent in this conversation\"": "subtitle:\"本会话中由智能体修改的文件\"",
+        "title:\"Added (Staged)\"": "title:\"已添加 (已暂存)\"",
+        "title:\"Untracked (Unstaged)\"": "title:\"未跟踪 (未暂存)\"",
+        "title:\"Untracked\"": "title:\"未跟踪\"",
+        "title:\"Modified\"": "title:\"已修改\"",
+        "title:\"Deleted\"": "title:\"已删除\"",
+        "title:\"Renamed\"": "title:\"已重命名\"",
+        "title:\"Copied\"": "title:\"已复制\"",
+        "title:\"Staged Changes\"": "title:\"已暂存的更改\"",
+        "title:\"Modified Files\"": "title:\"已修改的文件\"",
+        "label:\"Open Commit Graph\"": "label:\"打开提交历史图谱\"",
+        "label:\"Revert file changes\"": "label:\"撤销文件更改\"",
+        "label:\"Split Terminal\"": "label:\"分栏终端\"",
+        "tooltip:\"Split Terminal\"": "tooltip:\"分栏终端\"",
+        "\"aria-label\":\"Split Terminal\"": "\"aria-label\":\"分栏终端\"",
+        "label:\"Kill Terminal\"": "label:\"终止终端进程\"",
+        "tooltip:\"Kill Terminal\"": "tooltip:\"终止终端进程\"",
+        "label:\"New Terminal Tab\"": "label:\"新建终端标签页\"",
+        "label:\"Close Terminal Tab\"": "label:\"关闭终端标签页\"",
+        "label:\"Toggle Terminal\"": "label:\"切换终端面板\"",
+        "\"aria-label\":\"Toggle Terminal Panel\"": "\"aria-label\":\"切换终端面板\"",
+        "Toggle Terminal Panel": "切换终端面板",
+        "\"aria-label\":\"Delete Terminal\"": "\"aria-label\":\"删除终端\"",
+        "\"aria-label\":\"New Terminal\"": "\"aria-label\":\"新建终端\"",
+        "\"aria-label\":\"Close Panel\"": "\"aria-label\":\"关闭面板\"",
+        "Close Panel": "关闭面板",
+        "title:\"Standalone Terminals\"": "title:\"独立终端\"",
+        "Starting terminal\\u2026": "正在启动终端\\u2026",
+        "promptText:\"Send command input?\"": "promptText:\"是否发送命令输入？\"",
+        "title:\"Failed to create terminal\"": "title:\"创建终端失败\"",
+        "description:{text:\"Attach terminal output\"}": "description:{text:\"附加终端输出\"}",
+        "label:\"Terminal: Add to Chat\"": "label:\"终端：添加到对话\"",
+        "label:\"Terminal Command Auto Execution\"": "label:\"终端命令自动执行策略\"",
+        "description:\"Controls whether terminal commands require your approval before running.\"": "description:\"控制终端命令在运行前是否需要经过您的确认批准。\"",
+        "label:\"Terminal Commands\"": "label:\"终端命令规则\"",
+        "description:\"Allow/deny specific terminal commands.\"": "description:\"配置允许或禁止执行的具体终端命令。\"",
+        "description:\"Configure allowed terminal commands.\"": "description:\"配置白名单允许的终端命令。\"",
+        "placeholder:\"e.g., npm test\"": "placeholder:\"例如：npm test\"",
+        "label:\"Commands Outside Sandbox\"": "label:\"沙箱外命令执行\"",
+        "label:\"Enable Terminal Sandbox\"": "label:\"启用终端安全沙箱\"",
+        "accessibilityLabel:\"Workspace File Explorer\"": "accessibilityLabel:\"工作区文件浏览器\"",
+        "text:\"File explorer\"": "text:\"文件浏览器\"",
+        "placeholder:\"Filter files...\"": "placeholder:\"过滤文件...\"",
+        "\"aria-label\":\"Filter files\"": "\"aria-label\":\"过滤文件\"",
+        "label:\"Recent files\"": "label:\"最近打开的文件\"",
+        "title:\"Recent Files\"": "title:\"最近打开的文件\"",
+        "label:\"Keep Open\"": "label:\"保持打开\"",
+        "label:\"Close Tab\"": "label:\"关闭标签页\"",
+        "label:\"Close Other Tabs\"": "label:\"关闭其他标签页\"",
+        "label:\"Close Tabs to the Left\"": "label:\"关闭左侧标签页\"",
+        "label:\"Close Tabs to the Right\"": "label:\"关闭右侧标签页\"",
+        "label:\"Find References\"": "label:\"查找所有引用\"",
+        "label:\"Copy File Path\"": "label:\"复制文件完整路径\"",
+        "label:\"Copy File Name\"": "label:\"复制文件名\"",
+        "label:\"Copy Config File Path\"": "label:\"复制配置文件路径\"",
+        "label:\"Split Right\"": "label:\"向右分栏\"",
+        "label:\"Split Down\"": "label:\"向下分栏\"",
+        "label:\"Equalize Split Panes\"": "label:\"均分分栏面板大小\"",
+        "label:\"Split Conversation Vertically\"": "label:\"垂直分栏会话\"",
+        "label:\"Split Conversation Horizontally\"": "label:\"水平分栏会话\"",
+        "label:\"Open in Tab\"": "label:\"在标签页中打开\"",
+        "label:\"Open in New Tab\"": "label:\"在新标签页中打开\"",
+        "label:\"Open Link in New Tab\"": "label:\"在新标签页中打开链接\"",
+        "label:\"Copy Link Address\"": "label:\"复制链接地址\"",
+        "label:\"Open Image in New Tab\"": "label:\"在新标签页中打开图像\"",
+        "label:\"Copy Image Address\"": "label:\"复制图像地址\"",
+        "label:\"Copy Link\"": "label:\"复制链接\"",
+        "label:\"Copy Message\"": "label:\"复制消息内容\"",
+        "label:\"Copy Trajectory ID\"": "label:\"复制执行轨迹 ID\"",
+        "label:\"Copy Conversation ID\"": "label:\"复制会话 ID\"",
+        "tooltip:\"Download File\"": "tooltip:\"下载文件\"",
+        "title:\"Show in folder\"": "title:\"在文件夹中显示\"",
+        "Disable Word Wrap (Alt+Z)": "禁用自动换行 (Alt+Z)",
+        "Enable Word Wrap (Alt+Z)": "启用自动换行 (Alt+Z)",
+        "ariaLabel:\"Toggle Word Wrap (Alt+Z)\"": "ariaLabel:\"切换自动换行 (Alt+Z)\"",
+        "tooltip:\"Open in Notebook View\"": "tooltip:\"在 Notebook 视图中打开\"",
+        "ariaLabel:\"Open in Notebook View\"": "ariaLabel:\"在 Notebook 视图中打开\"",
+        "tooltip:\"Copy Content\"": "tooltip:\"复制文件内容\"",
+        "tooltip:\"Export as PDF\"": "tooltip:\"导出为 PDF\"",
+        "tooltip:\"Open in Code Search\"": "tooltip:\"在代码检索中打开\"",
+        "tooltip:\"Open Blame in Code Search\"": "tooltip:\"在代码检索中查看 Git Blame\"",
+        "ariaLabel:\"Open Blame in Code Search\"": "ariaLabel:\"在代码检索中查看 Git Blame\"",
+        "label:\"Collapse All Folders\"": "label:\"全部折叠文件夹\"",
+        "label:\"Expand All Folders\"": "label:\"全部展开文件夹\"",
+        "label:\"Select All\"": "label:\"全选内容\"",
+        "label:\"Cancel Generation\"": "label:\"停止生成响应\"",
+        "label:\"File Picker\"": "label:\"文件检索器\"",
+        "label:\"Open Command Palette\"": "label:\"打开命令面板\"",
+        "label:\"Search Conversations\"": "label:\"搜索历史会话\"",
+        "label:\"Previous Side Panel Tab\"": "label:\"上一侧边栏标签页\"",
+        "label:\"Next Side Panel Tab\"": "label:\"下一侧边栏标签页\"",
+        "label:\"Toggle Side Panel\"": "label:\"切换侧边栏面板\"",
+        "label:\"Toggle Maximize Side Panel\"": "label:\"最大化/还原侧边栏\"",
+        "title:\"Shortcuts\"": "title:\"快捷键绑定\"",
+        "description:\"Keyboard shortcuts for quick navigation and control.\"": "description:\"用于快捷导航和系统控制的键盘快捷键。\"",
+        "placeholder:c=\"Search shortcuts...\"": "placeholder:c=\"搜索快捷键...\"",
+        "\"aria-label\":\"Search shortcuts\"": "\"aria-label\":\"搜索快捷键\"",
+        "\"aria-label\":\"Clear search\"": "\"aria-label\":\"清空搜索\"",
+        "tooltip:\"Reset All to Defaults\"": "tooltip:\"全部重置为默认值\"",
+        "\"aria-label\":\"Reset all shortcuts to defaults\"": "\"aria-label\":\"全部快捷键重置为默认值\"",
+        "label:\"Edit Shortcut\"": "label:\"编辑快捷键\"",
+        "tooltip:\"Edit Shortcut\"": "tooltip:\"编辑快捷键\"",
+        "label:\"Add Shortcut\"": "label:\"添加快捷键\"",
+        "tooltip:\"Add Shortcut\"": "tooltip:\"添加快捷键\"",
+        "label:\"Remove Shortcut\"": "label:\"移除快捷键\"",
+        "tooltip:\"Remove Shortcut\"": "tooltip:\"移除快捷键\"",
+        "label:\"Reset to Default\"": "label:\"重置为默认按键\"",
+        "tooltip:\"Reset to Default\"": "tooltip:\"重置为默认按键\"",
+        "tooltip:\"Stop Editing\"": "tooltip:\"停止编辑\"",
+        "\"aria-label\":\"Cancel recording\"": "\"aria-label\":\"取消录制\"",
+        "navigation:\"Navigation\"": "navigation:\"导航\"",
+        "conversation:\"Conversation\"": "conversation:\"会话\"",
+        "layout:\"Layout Controls\"": "layout:\"布局控制\"",
+        "label:\"Open Conversation in New Tab\"": "label:\"在新标签页中打开会话\"",
+        "This shortcut is reserved by browser tabs and may not trigger in Web mode. It works in the Desktop Hub or installed PWA.": "此快捷键已被浏览器标签页保留，在 Web 模式下可能无法触发。它可在桌面端 Hub 或已安装的 PWA 中正常使用。",
 }
 
     print("Applying translations...")
@@ -4309,10 +4597,160 @@ def main():
     "Modified Files": "已修改文件",
     "Untracked (Unstaged)": "未跟踪 (未暂存)",
     "Terminal & Tooling Permissions": "终端与工具执行权限",
+    // --- 2.30.0 Dynamic Audit Entries ---
+    "Folder where files downloaded in the built-in browser are saved.": "内置浏览器中下载的文件所保存的本地文件夹。",
+    "CitC workspace paths are world-readable and permanently snapshotted. Choose a local folder outside CitC.": "CitC 工作区路径全员可读且会被永久创建快照。请选择 CitC 目录之外的本地文件夹。",
+    "Clear visited URLs and autocomplete suggestions from side panel preview.": "清除侧边栏面板预览中已访问的网址与自动补全建议。",
+    "Clear visited URLs and autocomplete suggestions from the built-in browser.": "清除内置浏览器中已访问的网址与自动补全建议。",
+    "Configure allowed and denied URLs for the browser subagent. It runs in the built-in browser, so no separate browser install is needed.": "为浏览器子智能体配置允许和拒绝访问的网址。其运行在内置浏览器中，无需单独安装外部浏览器。",
+    "Block all browser JavaScript execution.": "完全阻止所有浏览器 JavaScript 脚本的执行。",
+    "Prompt for approval before running browser scripts.": "在运行浏览器脚本前弹出提示请求您的批准。",
+    "Allow full browser script execution without prompting.": "无需提示，允许全自动执行浏览器脚本。",
+    "These allowed domain rules are set by your organization's administrator and cannot be removed.": "这些允许的域名规则由您所在组织的管理员设定，无法删除。",
+    "Project 4K interface without developer tooling.": "不包含开发者工具集的 Project 4K 极简界面。",
+    "AI coding agents are known to have certain security risks, including autonomous code execution, data exfiltration, prompt injection and supply chain risks. Ensure that you monitor and verify all actions taken by the agent.": "AI 编程智能体存在一定的安全风险，包括自主代码执行、数据泄露、提示词注入以及供应链安全风险。请务必监督并核验智能体所执行的所有操作。",
+    "does not collect any of your prompts, content, or model responses but does collect general usage patterns such as feature adoption and active user counts (\\u201cproduct analytics\\u201d). Telemetry data will be handled in accordance with the Google Privacy Policy.": "不会收集您的任何提示词、代码内容或模型回复，但会收集通用使用模式，例如功能采用率与活跃用户数（“产品分析数据”）。遥测数据将根据《Google 隐私权政策》进行处理。",
+    "does not collect any of your prompts, content, or model responses, but will still collect general usage patterns (e.g., feature adoption, active user counts).": "不会收集您的任何提示词、代码内容或模型回复，但仍会收集通用使用模式（例如功能采用率、活跃用户数）。",
+    "One last thing before getting started\\u2026": "正式开始前的最后一件事…",
+    "A few things to know, and a couple settings to review.": "几点需知事项与若干偏好设置需您确认。",
+    "Automated safeguards help to protect your conversations from insecure or unsafe content. That being said, users should be aware of potential agentic risks, including data exfiltration.": "自动化安全防线有助于保护您的对话免受不安全或恶意内容的侵害。尽管如此，用户仍应警惕潜在的智能体代理风险，包括数据外泄风险。",
+    "Allow Google to collect and use your Interactions data, subject to the": "允许 Google 收集并使用您的交互数据，受以下条款约束：",
+    "Google Privacy Policy": "Google 隐私权政策",
+    "You can control this from your settings at any point.": "您随时可以在设置中更改此项。",
+    "Here's how you and your agents work together": "以下是您与智能体协作的方式",
+    "Describe what you want. Your agent plans and builds it, and brings in other agents when needed.": "描述您的需求。您的智能体将规划并实现它，并在需要时引入其他智能体协同。",
+    "Comment on the plan before your agent starts, and get a walkthrough when it finishes.": "在智能体开始前对实施方案提出修改意见，并在完成后获取详细的成果演示与巡查。",
+    "By default, agents work in folders you choose and ask before sensitive changes. Adjust this anytime in Settings.": "默认情况下，智能体仅在您选择的文件夹中工作并在执行敏感修改前征求许可。您可以随时在“设置”中调整此项。",
+    "You don't have access to this Google Drive file, so its title couldn't be added. The link was kept as-is.": "您没有此 Google Drive 文件的访问权限，因此无法添加其标题。链接已按原样保留。",
+    "Timed out fetching the Google Drive file's title. The link was kept as-is.": "获取 Google Drive 文件标题超时。链接已按原样保留。",
+    "Couldn't fetch the Google Drive file's title. The link was kept as-is.": "无法获取该 Google Drive 文件的标题。链接已按原样保留。",
+    "Link copied to clipboard.": "链接已复制到剪贴板。",
+    "Select Google Drive files or folders": "选择 Google Drive 文件或文件夹",
+    "Docs, Sheets, Slides, and folders": "Google 文档、表格、幻灯片和文件夹",
+    "Files, folders, and repositories you connect are accessible to your agent in this project, including during background or scheduled runs.": "您在此项目中关联的文件、文件夹与代码仓库可供智能体直接访问，包括后台任务与定时任务运行期间。",
+    "Remove individual uploaded files or connected resources in Project Settings, or delete a project or conversation to remove its stored files.": "可在项目设置中移除单个已上传的文件或关联资源，或者通过删除项目/对话来移除其存储的文件。",
+    "Send a message in the main conversation first to start a side question": "请先在主对话中发送消息以开启侧边提问",
+    "Enter a side question after /btw": "请在 /btw 后输入侧边提问内容",
+    "Cannot promote a subagent's side question": "无法提升子智能体的侧边提问",
+    "Promote to Conversation": "提升为主对话",
+    "Promote to conversation": "提升为主对话",
+    "Ask a side question without interrupting the main conversation": "提出侧边问题，无需打断主对话",
+    "Help me self-troubleshoot an issue, configure Jetski, or file a bug or feature request from this conversation.": "帮助我自助排查问题、配置 Jetski，或从当前对话提交 Bug 与功能建议。",
+    "Failed to send side question": "发送侧边提问失败",
+    "Failed to start side question": "启动侧边提问失败",
+    "Failed to delete side question": "删除侧边提问失败",
+    "Are you sure you want to delete this side question? This action cannot be undone.": "您确定要删除此侧边提问吗？此操作无法撤销。",
+    "Stop Side Question": "停止侧边提问",
+    "Stop side question": "停止侧边提问",
+    "Side question answered.": "侧边提问已回答。",
+    "Waiting for response... (Esc to minimize)": "正在等待回复... (按 Esc 最小化)",
+    "Reply to /help... (Esc to minimize)": "回复 /help... (按 Esc 最小化)",
+    "Copied to clipboard": "已复制到剪贴板",
+    "No model specified for Battle Mode, falling back to use current selected model": "未为对决模式指定模型，正在回退使用当前选定模型",
+    "Shares this repository, with a working copy of its own. Uncommitted changes stay behind.": "共享此代码仓库并拥有独立的工作副本。未提交的更改不会带入。",
+    "A copy of the workspace snapshot recorded at this step.": "此步骤记录的工作区快照副本。",
+    "A full copy of this workspace, uncommitted changes included.": "此工作区的完整副本，包含未提交的更改。",
+    "Rewinds the conversation only. Files in this workspace stay as they are now.": "仅倒回对话。此工作区中的文件保持现状。",
+    "Keeps working in this workspace. Nothing is copied.": "继续在此工作区中工作。不复制任何内容。",
+    "Canvas · written by your Chief of Staff · display only": "画布 · 由您的幕僚长编写 · 仅限查看",
+    "Canvas page · display only": "画布页面 · 仅限查看",
+    "Voice recording is unavailable while the Chief of Staff mic is on": "幕僚长麦克风开启期间无法进行语音录制",
+    "Cannot start best-of-N mode while the agent is running": "智能体正在运行时无法启动最优选择 (Best-of-N) 模式",
+    "Messaging subagents isn't supported in remote conversations yet.": "远程对话中暂不支持与子智能体收发消息。",
+    "Configure allowed and denied URLs for the browser subagent (invoked with /browser). Requires": "配置浏览器子智能体（通过 /browser 调用）的允许与拒绝 URL。需要",
+    "Configure built-in browser, link opening, and browser subagent preferences.": "配置内置浏览器、链接打开方式以及浏览器子智能体偏好设置。",
+    "Failed to submit comment. Please try again.": "提交评论失败。请重试。",
+    "Workflows are changing on October 19th—stay tuned for updates. You can use the agent to migrate your workflows.": "工作流机制正在升级改造中，敬请关注后续更新。你可以使用智能体自动迁移你的工作流。",
+    "Allow reading workflow runs (list, view, watch) across the whole repository.": "允许在整个仓库中读取工作流运行记录（列出、查看、监视）。",
+    "Curated sets of plugins for common workflows and roles.": "针对常见工作流和角色的精选插件集。",
+    "Grant read access to workflow runs and allow dispatching workflows on specific files and refs.": "授予对工作流运行记录的读取权限，并允许在特定文件和引用上调度工作流。",
+    "Side Questions": "侧边提问",
+    "Side Question": "侧边提问",
+    "New Side Question": "新侧边提问",
+    "Full View": "完整视图",
+    "Workflow files": "工作流文件",
+    "Workflow refs": "工作流引用",
+    "Workflow runs": "工作流运行",
+    "What is missing in your workflow": "您的工作流中缺少什么",
+    "What you would like to see to address this gap in your workflow": "您希望通过什么方式填补工作流中的这一空白",
+    "All changes since the branch point": "自分支起点以来的全部变更",
+    "Toggle Terminal Panel": "切换终端面板",
+    "Delete Terminal": "删除终端",
+    "Close Panel": "关闭面板",
+    "Starting terminal\\u2026": "正在启动终端\\u2026",
+    "No active terminals": "无活动的终端",
+    "Disable Word Wrap (Alt+Z)": "禁用自动换行 (Alt+Z)",
+    "Enable Word Wrap (Alt+Z)": "启用自动换行 (Alt+Z)",
+    "Preview unavailable due to a notebook parsing error.": "由于 Notebook 解析错误，预览暂不可用。",
+    "This shortcut is reserved by browser tabs and may not trigger in Web mode. It works in the Desktop Hub or installed PWA.": "此快捷键已被浏览器标签页保留，在 Web 模式下可能无法触发。它可在桌面端 Hub 或已安装的 PWA 中正常使用。",
 };;;
 
 
   const translateDynamicRegex = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    const t = text.trim();
+    // --- 2.30.0 Side Questions & Agent Team Dynamic Regex ---
+    // 实施规划审批带评论数量动态匹配
+    if (/^Proceed with implementation plan and (\d+) comments?$/.test(t)) {
+      return text.replace(/^Proceed with implementation plan and (\d+) comments?$/, "按实施规划及 $1 条批注继续执行");
+    }
+    // 产物评论数量动态折叠面板
+    if (/^Review (\d+) comments?$/.test(t)) {
+      return text.replace(/^Review (\d+) comments?$/, "查看 $1 条评论");
+    }
+    // 主输入框底部帮助与侧边提问聚合计数
+    if (/^(\d+) Help · (\d+) Side Questions?$/.test(t)) {
+      return text.replace(/^(\d+) Help · (\d+) Side Questions?$/, "$1 项帮助 · $2 个侧边提问");
+    }
+    // 主输入框底部帮助计数
+    if (/^(\d+) Help$/.test(t)) {
+      return text.replace(/^(\d+) Help$/, "$1 项帮助");
+    }
+    // 主输入框底部侧边提问计数
+    if (/^(\d+) Side Questions?$/.test(t)) {
+      return text.replace(/^(\d+) Side Questions?$/, "$1 个侧边提问");
+    }
+    // 侧边提问浮动按钮 tooltip 查看文本
+    if (/^View (\d+) help(?: items?)? and (\d+) side questions?$/.test(t)) {
+      return text.replace(/^View (\d+) help(?: items?)? and (\d+) side questions?$/, "查看 $1 项帮助与 $2 个侧边提问");
+    }
+    // 侧边提问浮动按钮 tooltip 单项查看文本
+    if (/^View (\d+) side questions?$/.test(t)) {
+      return text.replace(/^View (\d+) side questions?$/, "查看 $1 个侧边提问");
+    }
+    // 帮助浮动按钮 tooltip 单项查看文本
+    if (/^View (\d+) help(?: items?)?$/.test(t)) {
+      return text.replace(/^View (\d+) help(?: items?)?$/, "查看 $1 项帮助");
+    }
+    // 侧边提问历史切换器计数
+    if (/^Question (\d+) of (\d+)$/.test(t)) {
+      return text.replace(/^Question (\d+) of (\d+)$/, "第 $1 个问题（共 $2 个）");
+    }
+    // 概览面板子智能体折叠项更多数量
+    if (/^Show (\d+) more subagents?$/.test(t)) {
+      return text.replace(/^Show (\d+) more subagents?$/, "展开另外 $1 个子智能体");
+    }
+    // 工作流列表折叠展开更多数量
+    if (/^\+(\d+) more \(Show all\)$/.test(t)) {
+      return text.replace(/^\+(\d+) more \(Show all\)$/, "另外 +$1 项（展开全部）");
+    }
+    // 侧边提问运行错误动态通知
+    if (/^Side question failed: (.*)$/.test(t)) {
+      return text.replace(/^Side question failed: (.*)$/, "侧边提问失败：$1");
+    }
+    // 步骤轨迹中调用子智能体动态摘要
+    if (/^Invoked subagent: (.*)$/.test(t)) {
+      return text.replace(/^Invoked subagent: (.*)$/, "已调用子智能体：$1");
+    }
+    // 双击或回车重命名侧边提问 aria-label
+    if (/^Edit side question title: (.*)$/.test(t)) {
+      return text.replace(/^Edit side question title: (.*)$/, "编辑侧边提问标题：$1");
+    }
+    // 侧边提问行悬停删除按钮 aria-label
+    if (/^Delete side question: (.*)$/.test(t)) {
+      return text.replace(/^Delete side question: (.*)$/, "删除侧边提问：$1");
+    }
+
     if (/^Exited with code (\d+)\.?$/.test(t)) {
       return text.replace(/^Exited with code (\d+)\.?$/, "已退出，退出代码: $1。");
     }
@@ -4341,9 +4779,6 @@ def main():
       return text.replace(/^Reset (.+) to default$/, "将“$1”恢复为默认快捷键");
     }
 
-    if (!text || typeof text !== 'string') return text;
-    const t = text.trim();
-    
     // --- 1. 思考过程与耗时 ---
     if (/^Thought for \d+s$/.test(t)) {
       return text.replace(/^Thought for (\d+)s$/, "已深度思考 $1 秒");
@@ -4669,7 +5104,7 @@ def main():
     elif _sm:
         _comp, _info, _query, _lbl, _icon, _desc = _sm.groups()
         _slash_matched = _sm.group(0)
-        _slash_inject = f'try{{var _cm={{"compact":{{n:"压缩会话 (/compact)",d:"压缩会话历史以释放上下文窗口空间"}},"/compact":{{n:"压缩会话 (/compact)",d:"压缩会话历史以释放上下文窗口空间"}},"goal":{{n:"全自动目标 (/goal)",d:"执行长耗时任务直到目标完全达成为止"}},"/goal":{{n:"全自动目标 (/goal)",d:"执行长耗时任务直到目标完全达成为止"}},"plan":{{n:"制定实施计划 (/plan)",d:"在执行前生成分步实施计划文档"}},"/plan":{{n:"制定实施计划 (/plan)",d:"在执行前生成分步实施计划文档"}},"browser":{{n:"浏览器交互 (/browser)",d:"进行网页浏览与交互"}},"/browser":{{n:"浏览器交互 (/browser)",d:"进行网页浏览与交互"}},"schedule":{{n:"定时调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"}},"/schedule":{{n:"定时调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"}},"grill-me":{{n:"深度对齐 (/grill-me)",d:"通过互动访谈，在方案细节上严格对齐"}},"/grill-me":{{n:"深度对齐 (/grill-me)",d:"通过互动访谈，在方案细节上严格对齐"}},"teamwork-preview":{{n:"团队协作预览 (/teamwork-preview)",d:"多智能体团队协作预览"}},"/teamwork-preview":{{n:"团队协作预览 (/teamwork-preview)",d:"多智能体团队协作预览"}},"learn":{{n:"模式学习 (/learn)",d:"将当前行为持久化记录为技能"}},"/learn":{{n:"模式学习 (/learn)",d:"将当前行为持久化记录为技能"}},"boost":{{n:"深度增强 (/boost)",d:"启用多视角深度思考、战略规划与严格验证"}},"/boost":{{n:"深度增强 (/boost)",d:"启用多视角深度思考、战略规划与严格验证"}}}};if({_lbl}&&_cm[{_lbl}.toLowerCase()]){{var _target=_cm[{_lbl}.toLowerCase()];{_lbl}=_target.n;if(_target.d){{if(typeof {_desc}==="object"&&{_desc}){{{_desc}.text=_target.d;{_desc}.rtl=!1;}}else{{{_desc}={{text:_target.d,rtl:!1}};}}}}}}}}catch(_e){{}};'
+        _slash_inject = f'try{{var _cm={{"compact":{{n:"压缩会话 (/compact)",d:"压缩会话历史以释放上下文窗口空间"}},"/compact":{{n:"压缩会话 (/compact)",d:"压缩会话历史以释放上下文窗口空间"}},"goal":{{n:"全自动目标 (/goal)",d:"执行长耗时任务直到目标完全达成为止"}},"/goal":{{n:"全自动目标 (/goal)",d:"执行长耗时任务直到目标完全达成为止"}},"plan":{{n:"制定实施计划 (/plan)",d:"在执行前生成分步实施计划文档"}},"/plan":{{n:"制定实施计划 (/plan)",d:"在执行前生成分步实施计划文档"}},"browser":{{n:"浏览器交互 (/browser)",d:"进行网页浏览与交互"}},"/browser":{{n:"浏览器交互 (/browser)",d:"进行网页浏览与交互"}},"schedule":{{n:"定时调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"}},"/schedule":{{n:"定时调度 (/schedule)",d:"设置一次性定时提醒或周期性自动化任务"}},"grill-me":{{n:"深度对齐 (/grill-me)",d:"通过互动访谈，在方案细节上严格对齐"}},"/grill-me":{{n:"深度对齐 (/grill-me)",d:"通过互动访谈，在方案细节上严格对齐"}},"teamwork-preview":{{n:"团队协作预览 (/teamwork-preview)",d:"多智能体团队协作预览"}},"/teamwork-preview":{{n:"团队协作预览 (/teamwork-preview)",d:"多智能体团队协作预览"}},"learn":{{n:"模式学习 (/learn)",d:"将当前行为持久化记录为技能"}},"/learn":{{n:"模式学习 (/learn)",d:"将当前行为持久化记录为技能"}},"boost":{{n:"深度增强 (/boost)",d:"启用多视角深度思考、战略规划与严格验证"}},"/boost":{{n:"深度增强 (/boost)",d:"启用多视角深度思考、战略规划与严格验证"}},"btw":{{n:"侧边提问 (/btw)",d:"在独立轻量面板中发起旁支提问，不阻塞主会话流"}},"/btw":{{n:"侧边提问 (/btw)",d:"在独立轻量面板中发起旁支提问，不阻塞主会话流"}}}};if({_lbl}&&_cm[{_lbl}.toLowerCase()]){{var _target=_cm[{_lbl}.toLowerCase()];{_lbl}=_target.n;if(_target.d){{if(typeof {_desc}==="object"&&{_desc}){{{_desc}.text=_target.d;{_desc}.rtl=!1;}}else{{{_desc}={{text:_target.d,rtl:!1}};}}}}}}}}catch(_e){{}};'
         content = content.replace(_slash_matched, _slash_matched + _slash_inject)
         print("Successfully injected slash command (compact, etc.) label & description localizer via dynamic AST/regex!")
     else:
