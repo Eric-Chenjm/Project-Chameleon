@@ -1,9 +1,10 @@
 @echo off
-title 变色龙 Antigravity 2.31.0 极速激活器
+chcp 936 >nul
+title 变色龙 Antigravity 2.31.0 终极智能激活器
 
 echo ========================================================
 echo         变色龙 (Project Chameleon) Antigravity 2.31.0
-echo                 极速无感汉化激活程序
+echo                 极速智能汉化激活程序
 echo ========================================================
 echo.
 
@@ -12,23 +13,24 @@ set ASAR=%RES_DIR%\app.asar
 set TMP_ASAR=%RES_DIR%\app.asar.tmp
 set UNPACKED=%RES_DIR%\app.asar.unpacked
 set TMP_UNPACKED=%RES_DIR%\app.asar.tmp.unpacked
+set APP_EXE=%LOCALAPPDATA%\Programs\antigravity\Antigravity.exe
 
-:check_running
+:: 检查是否存在运行中或后台驻留进程
 tasklist /FI "IMAGENAME eq Antigravity.exe" 2>NUL | find /I /N "Antigravity.exe">NUL
 if "%ERRORLEVEL%"=="0" (
-    echo [提示] 检测到 Antigravity 正在运行中。
-    echo 请先完全关闭 Antigravity 软件（点击右上角关闭）。
-    echo 退出软件后，按任意键继续执行激活...
+    echo [提示] 检测到 Antigravity 窗口已关闭，但后台仍有托盘或渲染进程驻留。
     echo.
-    pause >nul
-    goto check_running
+    echo 正在为您自动安全清理后台驻留进程，请稍候...
+    taskkill /F /IM "Antigravity.exe" /T >nul 2>nul
+    timeout /t 1 /nobreak >nul
 )
 
+echo.
 echo [1/3] 正在应用 2.31.0 协议注入核心...
 if exist "%TMP_ASAR%" (
     move /Y "%TMP_ASAR%" "%ASAR%" >nul
     if errorlevel 1 (
-        echo [错误] 替换 app.asar 失败，请确认 Antigravity 已完全退出。
+        echo [错误] 替换 app.asar 失败，请检查文件是否被其他程序占用。
         pause
         exit /b 1
     ) else (
@@ -56,7 +58,12 @@ if exist "%APPDATA%\Antigravity\zh_cn_ui_main.js" (
 echo.
 echo ========================================================
 echo  恭喜！Antigravity 2.31.0 全量汉化已 100%% 激活完成！
-echo     现在您可以正常启动 Antigravity 享受纯净中文体验。
 echo ========================================================
 echo.
-pause
+echo 按任意键立即启动全新中文版 Antigravity ...
+pause >nul
+
+if exist "%APP_EXE%" (
+    start "" "%APP_EXE%"
+)
+exit
