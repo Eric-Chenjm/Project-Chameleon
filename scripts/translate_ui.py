@@ -3410,6 +3410,442 @@ def main():
         "layout:\"Layout Controls\"": "layout:\"布局控制\"",
         "label:\"Open Conversation in New Tab\"": "label:\"在新标签页中打开会话\"",
         "This shortcut is reserved by browser tabs and may not trigger in Web mode. It works in the Desktop Hub or installed PWA.": "此快捷键已被浏览器标签页保留，在 Web 模式下可能无法触发。它可在桌面端 Hub 或已安装的 PWA 中正常使用。",
+        # --- 2.31.0 Audit Merged Entries ---
+        "label:\"Projects\"": "label:\"项目设置\"",
+        "label:\"Environments\"": "label:\"环境配置\"",
+        "label:\"Application\"": "label:\"应用设置\"",
+        "label:\"General\"": "label:\"常规设置\"",
+        "label:\"Appearance\"": "label:\"外观与主题\"",
+        "label:\"Shortcuts\"": "label:\"键盘快捷键\"",
+        "label:\"Notifications\"": "label:\"通知设置\"",
+        "label:\"Models\"": "label:\"模型与用量\"",
+        "label:\"Customizations\"": "label:\"自定义扩展\"",
+        "label:\"Browser\"": "label:\"内置浏览器\"",
+        "label:\"Developer\"": "label:\"开发者调试\"",
+        "label:\"Running\"": "label:\"运行中任务\"",
+        "label:\"Jetski Chat\"": "label:\"Jetski 聊天\"",
+        "label:\"Provide Feedback\"": "label:\"意见与反馈\"",
+        "label:\"Give Feedback\"": "label:\"提交产品反馈\"",
+        "text:\"Settings\"": "text:\"系统设置\"",
+        "text:\"Workspaces\"": "text:\"工作区列表\"",
+        "title:\"Projects\"": "title:\"项目管理\"",
+        "title:\"Environments\"": "title:\"环境配置\"",
+        "title:\"General\"": "title:\"常规配置\"",
+        "title:\"Appearance\"": "title:\"外观与主题\"",
+        "title:\"Shortcuts\"": "title:\"键盘快捷键\"",
+        "title:\"Notifications\"": "title:\"通知设置\"",
+        "title:\"Models\"": "title:\"模型与配额\"",
+        "title:\"Customizations\"": "title:\"自定义扩展\"",
+        "title:\"Browser\"": "title:\"浏览器配置\"",
+        "title:\"Developer\"": "title:\"开发者选项\"",
+        "title:\"Project Settings\"": "title:\"项目设置\"",
+        "title:\"Workspace Settings\"": "title:\"工作区设置\"",
+        "title:\"Danger Zone\"": "title:\"危险区域\"",
+        "title:\"Terminal\"": "title:\"终端\"",
+        "title:\"Google3 Configuration\"": "title:\"Google3 配置\"",
+        "label:\"Command Setup Script\"": "label:\"命令执行前置初始化脚本\"",
+        "description:\"A shell setup script run before every command the agent executes in this project. Overrides the global script.\"": "description:\"智能体在此项目中执行每个命令前预先运行的 Shell 初始化脚本。将覆盖全局设置。\"",
+        "placeholder:\"example:\\nsource ~/.jetski_shell_setup\"": "placeholder:\"例如：\\nsource ~/.jetski_shell_setup\"",
+        "label:\"Delete Project\"": "label:\"删除项目\"",
+        "label:\"Delete Workspace\"": "label:\"删除工作区\"",
+        "Create Project": "新建项目",
+        "Delete Project": "删除项目",
+        "Failed to resolve folder": "解析文件夹失败",
+        "Are you sure you want to delete the project ": "您确定要删除该项目 ",
+        "This will permanently delete ": "这将永久删除 ",
+        "within it.": "内包含的全部内容。",
+        "label:\"Toggle Environment Selector\"": "label:\"切换运行环境选择器\"",
+        "label:\"Toggle Project Selector\"": "label:\"切换项目选择器\"",
+        "label:\"Toggle Side Panel\"": "label:\"切换侧边栏面板\"",
+        "label:\"Toggle Maximize Side Panel\"": "label:\"切换侧边栏最大化\"",
+        "label:\"Host Environment\"": "label:\"宿主运行环境\"",
+        "description:\"Simulate a different host (Electron, desktop or mobile Web, Extension, remote control, or installed PWA).\"": "description:\"模拟不同的宿主环境（Electron 桌面端、网页端、浏览器扩展、远程控制或 PWA 应用）。\"",
+        "label:\"Operating System\"": "label:\"操作系统环境\"",
+        "description:\"Simulate running on a different OS.\"": "description:\"模拟在不同的操作系统上运行。\"",
+        "label:\"User Type\"": "label:\"用户身份集群\"",
+        "description:\"Simulate a different user cohort (Google, External, Enterprise).\"": "description:\"模拟不同的用户身份类型（Google 内部、外部开发者、企业团队）。\"",
+        "label:\"Override feature environment\"": "label:\"覆盖功能运行环境\"",
+        "description:\"When enabled, the values below replace the auto-detected OS, host, and user type used for feature gating.\"": "description:\"启用后，下方设置的数值将替代自动检测的操作系统、宿主与用户集群，用于功能权限判定。\"",
+        "Project General": "项目常规设置",
+        "Project Folders": "项目文件夹配置",
+        "Project Agent": "项目智能体配置",
+        "Project 4K": "项目 4K 高分屏优化",
+        "label:\"This Computer\"": "label:\"本机环境\"",
+        "label:\"Remote\"": "label:\"远程环境\"",
+        "title:\"Tool Permissions\"": "title:\"工具调用权限\"",
+        "title:\"File Permissions\"": "title:\"文件读写权限\"",
+        "title:\"File Access Rules\"": "title:\"文件访问控制规则\"",
+        "title:\"Network Permissions\"": "title:\"网络访问权限\"",
+        "title:\"Network Access Rules\"": "title:\"网络访问控制规则\"",
+        "title:\"Terminal Commands\"": "title:\"终端命令规则\"",
+        "title:\"Commands Outside Sandbox\"": "title:\"沙箱外部命令规则\"",
+        "title:\"MCP Tools\"": "title:\"MCP 外部工具协议\"",
+        "label:\"File Reads\"": "label:\"文件读取授权\"",
+        "label:\"File Writes\"": "label:\"文件写入授权\"",
+        "label:\"Read URLs\"": "label:\"网址读取权限\"",
+        "label:\"Execute URLs\"": "label:\"网址执行与交互\"",
+        "label:\"Download files\"": "label:\"文件下载权限\"",
+        "label:\"Terminal Command Auto Execution\"": "label:\"终端命令自动执行策略\"",
+        "description:\"Controls whether terminal commands require your approval before running.\"": "description:\"控制终端命令在执行前是否需要您的手动审批。\"",
+        "label:\"Outside of folders file access policy\"": "label:\"文件夹外部文件访问策略\"",
+        "description:\"Configures how the agent tries to access files outside of its working folders.\"": "description:\"配置智能体尝试访问工作区文件夹外部文件时的处理方式。\"",
+        "description:\"Allow/deny agent read access to specific files or directories.\"": "description:\"允许/拒绝智能体读取特定文件或目录。\"",
+        "description:\"Allow/deny agent write access to specific files or directories.\"": "description:\"允许/拒绝智能体写入或修改特定文件或目录。\"",
+        "description:\"Allow/deny agent read access to specific URLs or domains.\"": "description:\"允许或禁止智能体读取特定的网址或域名。\"",
+        "description:\"Allow/deny agent browser actuation access to specific URLs.\"": "description:\"允许或禁止智能体在指定网址上执行浏览器自动化操作。\"",
+        "description:\"Allow/deny agent browser file downloads from specific sites.\"": "description:\"允许或禁止智能体从特定网站下载文件。\"",
+        "description:\"Allow/deny agent command execution outside the sandbox.\"": "description:\"允许或禁止智能体在沙箱隔离环境外执行命令。\"",
+        "description:\"Configure allowed terminal commands.\"": "description:\"配置已授权自动执行的终端命令列表。\"",
+        "description:\"Configure allowed commands outside the sandbox.\"": "description:\"配置允许在隔离沙箱外部直接执行的命令。\"",
+        "description:\"Configure allowed and denied paths for file reads and writes.\"": "description:\"配置文件读取与写入的允许和禁止路径。\"",
+        "description:\"Configure allowed and denied URLs for reading.\"": "description:\"配置允许或禁止读取的网络网址规则。\"",
+        "description:\"Configure external tools via Model Context Protocol.\"": "description:\"配置基于模型上下文协议 (MCP) 的外部扩展工具。\"",
+        "placeholder:\"Enter tool name or server...\"": "placeholder:\"输入工具名称或 MCP 服务端...\"",
+        "title:\"Organization Allowed Domains (Read-Only)\"": "title:\"组织预设域名白名单 (只读)\"",
+        "description:\"These allowed domain rules are set by your organization's administrator and cannot be removed.\"": "description:\"这些域名访问规则由您的组织管理员统一部署，无法手动删除。\"",
+        "label:\"Print telemetry to the console\"": "label:\"在控制台打印遥测日志\"",
+        "description:\"Logs each telemetry event to the browser's DevTools console as it fires, with the click or key that caused it. Stays on across reloads until you turn it off.\"": "description:\"在触发事件时，将每个遥测日志及引发它的点击或按键实时输出到 DevTools 控制台。刷新后保持开启，直至手动关闭。\"",
+        "For your plan, telemetry is force disabled.": "在您当前的套餐方案下，遥测数据收集已强制停用。",
+        "General usage patterns (e.g., feature adoption, active user counts)": "通用使用模式（例如功能采纳率、活跃用户数等）",
+        "label:\"Product Updates & Marketing Emails\"": "label:\"产品动态与技术资讯邮件\"",
+        "Terms of Service": "服务条款",
+        "Privacy Policy": "隐私政策",
+        "title:\"Model Quota\"": "title:\"模型配额\"",
+        "title:\"Refresh quota and credits data\"": "title:\"刷新配额与额度点数\"",
+        "description:\"Manage your model quota and credits.\"": "description:\"管理您的大模型配额限制与点数用量。\"",
+        "title:\"Plan\"": "title:\"当前订阅方案\"",
+        "title:\"Model Credits\"": "title:\"AI 模型点数\"",
+        "label:\"Enable AI Credit Overages\"": "label:\"允许超额使用 AI 点数\"",
+        "description:\"Allow usage to continue once your included monthly credits run out by charging overage fees to your payment method.\"": "description:\"当每月包含的点数额度耗尽后，允许通过绑定的支付方式扣除超额费用以保持服务不中断。\"",
+        "description:\"Rules, skills, MCP servers, and hooks to customize the agent's behavior.\"": "description:\"通过规则文件、专业技能、MCP 服务端与生命周期钩子深度定制智能体。\"",
+        "label:\"All tools (*)\"": "label:\"所有工具 (*)\"",
+        "description:\"Hook will trigger if any tool is executed.\"": "description:\"在执行任意工具时均会触发该钩子。\"",
+        "label:\"run_command\"": "label:\"运行终端命令 (run_command)\"",
+        "description:\"Hook will only trigger if the tool name matches run_command.\"": "description:\"仅当被调用的工具名称匹配 run_command 时触发。\"",
+        "label:\"Browser tools (browser_.*)\"": "label:\"浏览器工具集 (browser_.*)\"",
+        "description:\"Hook will only trigger if the tool name starts with browser_.\"": "description:\"仅当被调用的工具名称以 browser_ 开头时触发。\"",
+        "title:\"MCP Configuration Error:\"": "title:\"MCP 服务端配置错误：\"",
+        "title:\"Refresh MCP servers\"": "title:\"刷新 MCP 服务端\"",
+        "title:\"Installed MCP Servers\"": "title:\"已安装的 MCP 服务端\"",
+        "placeholder:\"Paste auth code\"": "placeholder:\"粘贴授权验证码\"",
+        "label:\"New Conversation Button\"": "label:\"新会话创建按钮行为\"",
+        "description:\"Which workspace the New Conversation button and keyboard shortcut start you in.\"": "description:\"点击【新建会话】按钮或按下快捷键时默认启动的目标工作区。\"",
+        "title:\"Best of N\"": "title:\"多解优选 (Best of N)\"",
+        "title:\"Labs\"": "title:\"实验室特性\"",
+        "subtitle:\"Try out early-stage features before they ship. These may be changed or removed at any time. These features are experimental, and we make no guarantees about performance or functionality.\"": "subtitle:\"在功能正式发布前抢先体验实验性特性。这些特性可能会随时更改或移除，属于早期实验性质，我们不对其稳定性或性能作任何保证。\"",
+        "tooltip:\"Reset All to Defaults\"": "tooltip:\"全部恢复默认值\"",
+        "needsAttention:\"Needs attention\",running:\"Working\",done:\"Completed\",killed:\"Cancelled\"": "needsAttention:\"需要关注\",running:\"运行中\",done:\"已完成\",killed:\"已取消\"",
+        "tooltip:\"Stop All Subagents\"": "tooltip:\"停止所有子智能体\"",
+        "aria-label:\"Stop subagent\"": "aria-label:\"停止子智能体\"",
+        "content:\"Stop Subagent\"": "content:\"停止子智能体\"",
+        "aria-label:\"Collapse subagents\"": "aria-label:\"折叠子智能体\"",
+        "aria-label:\"Expand subagents\"": "aria-label:\"展开子智能体\"",
+        "title:\"Subagents\"": "title:\"子智能体\"",
+        "title:\"Terminals\"": "title:\"终端\"",
+        "title:\"Open extracted DOM in editor\"": "title:\"在编辑器中打开提取的 DOM\"",
+        "Typing into Browser": "正在浏览器中输入",
+        "Typed into Browser": "已在浏览器中输入",
+        "Selecting Option in Browser": "正在浏览器中选择选项",
+        "Selected Option in Browser": "已在浏览器中选择选项",
+        "Retrieving Browser Pages": "正在获取浏览器页面",
+        "Retrieved Browser Pages": "已获取浏览器页面",
+        "Scroll in Browser": "在浏览器中滚动",
+        "Scrolled in Browser": "已在浏览器中滚动",
+        "Pick a model to change it.": "请选择一个模型以修改它。",
+        "label:\"Change model\"": "label:\"更改模型\"",
+        "label:\"Select Model\"": "label:\"选择模型\"",
+        "label:\"Select another model\"": "label:\"选择其他模型\"",
+        "title:\"Select Model to Send Message\"": "title:\"选择模型以发送消息\"",
+        "title:\"No Models Available\"": "title:\"无可用模型\"",
+        "Select a model in the model selector": "在模型选择器中选择模型",
+        "title:\"Model quota reached\"": "title:\"已达模型配额上限\"",
+        "title:\"Baseline model quota reached\"": "title:\"已达基础模型配额上限\"",
+        "label:\"Enable Overages\"": "label:\"启用超额扣费\"",
+        "label:\"See Plans\"": "label:\"查看方案\"",
+        "title:\"Verification required\"": "title:\"需要完成验证\"",
+        "label:\"Complete verification\"": "label:\"完成验证\"",
+        "title:\"Action required\"": "title:\"需要处理\"",
+        "title:\"Authentication expired\"": "title:\"身份认证已过期\"",
+        "Your session has expired. Please log back in to continue.": "您的登录会话已过期，请重新登录以继续。",
+        "label:\"Log back in\"": "label:\"重新登录\"",
+        "label:\"Copy debug info\"": "label:\"复制调试信息\"",
+        "title:\"Agent terminated due to error\"": "title:\"智能体因错误终止\"",
+        "This error is likely temporary. You can prompt the model to try again after some time.": "此错误可能只是暂时的。您可以稍后提示模型重试。",
+        "No upcoming run.": "暂无即将执行的排期。",
+        "Paused. Resume it to schedule the next run.": "已暂停。恢复后将排期下一次运行。",
+        "No Model Selected": "未选择模型",
+        "Ask /btw": "使用 /btw 侧边提问",
+        "title:\"Delete Side Question\"": "title:\"删除侧边提问\"",
+        "title:\"Failed to delete side question\"": "title:\"删除侧边提问失败\"",
+        "title:\"Failed to send side question\"": "title:\"发送侧边提问失败\"",
+        "title:\"Failed to start side question\"": "title:\"启动侧边提问失败\"",
+        "aria-label:\"Resize side question panel\"": "aria-label:\"调整侧边提问面板大小\"",
+        "title:\"Drag to resize, double-click to reset\"": "title:\"拖动以调整大小，双击以重置\"",
+        "aria-label:\"Previous side question\"": "aria-label:\"上一个侧边提问\"",
+        "tooltip:\"Previous question\"": "tooltip:\"上一题\"",
+        "aria-label:\"Next side question\"": "aria-label:\"下一个侧边提问\"",
+        "tooltip:\"Next question\"": "tooltip:\"下一题\"",
+        "aria-label:\"Delete side question\"": "aria-label:\"删除侧边提问\"",
+        "tooltip:\"Delete Side Question\"": "tooltip:\"删除侧边提问\"",
+        "title:\"Side Questions\"": "title:\"侧边提问\"",
+        "title:\"Background Tasks\"": "title:\"后台任务\"",
+        "title:\"Goals\"": "title:\"目标任务\"",
+        "title:\"Documents\"": "title:\"参考文档\"",
+        "title:\"Artifacts\"": "title:\"产物工件\"",
+        "title:\"Links\"": "title:\"相关链接\"",
+        "title:\"Modified Files\"": "title:\"修改的文件\"",
+        "label:\"Plan Review Policy\"": "label:\"规划评审策略\"",
+        "title:\"Add inline comment\"": "title:\"添加行内批注\"",
+        "Leave a comment": "添加批注",
+        "submitLabel:\"Add Comment\"": "submitLabel:\"添加评论\"",
+        "tooltip:\"View Stacked Diff\"": "tooltip:\"查看堆叠对比\"",
+        "ariaLabel:\"View Stacked Diff\"": "ariaLabel:\"查看堆叠对比\"",
+        "tooltip:\"View Split Diff\"": "tooltip:\"查看并排分栏对比\"",
+        "ariaLabel:\"View Split Diff\"": "ariaLabel:\"查看并排分栏对比\"",
+        "tooltip:\"Show Whitespace Changes\"": "tooltip:\"显示空白字符变动\"",
+        "ariaLabel:\"Show Whitespace Changes\"": "ariaLabel:\"显示空白字符变动\"",
+        "tooltip:\"Hide Whitespace Changes\"": "tooltip:\"隐藏空白字符变动\"",
+        "ariaLabel:\"Hide Whitespace Changes\"": "ariaLabel:\"隐藏空白字符变动\"",
+        "tooltip:\"Collapse All\"": "tooltip:\"全部折叠\"",
+        "tooltip:\"Expand All\"": "tooltip:\"全部展开\"",
+        "tooltip:\"Collapse Diffs\"": "tooltip:\"折叠所有差异\"",
+        "ariaLabel:\"Collapse Diffs\"": "ariaLabel:\"折叠所有差异\"",
+        "tooltip:\"Expand Diffs\"": "tooltip:\"展开所有差异\"",
+        "ariaLabel:\"Expand Diffs\"": "ariaLabel:\"展开所有差异\"",
+        "tooltip:\"Viewing Diff\"": "tooltip:\"当前处于对比视图\"",
+        "tooltip:\"View Diff\"": "tooltip:\"查看差异对比\"",
+        "ariaLabel:\"View Diff\"": "ariaLabel:\"查看差异对比\"",
+        "ariaLabel:\"View File\"": "ariaLabel:\"查看原文件\"",
+        "tooltip:\"Disable Word Wrap (Alt+Z)\"": "tooltip:\"禁用自动换行 (Alt+Z)\"",
+        "tooltip:\"Enable Word Wrap (Alt+Z)\"": "tooltip:\"启用自动换行 (Alt+Z)\"",
+        "ariaLabel:\"Toggle Word Wrap (Alt+Z)\"": "ariaLabel:\"切换自动换行 (Alt+Z)\"",
+        "tooltip:\"Open in Notebook View\"": "tooltip:\"在 Notebook 视图中打开\"",
+        "ariaLabel:\"Open in Notebook View\"": "ariaLabel:\"在 Notebook 视图中打开\"",
+        "tooltip:\"Copy Contents\"": "tooltip:\"复制文件内容\"",
+        "tooltip:\"Refresh\"": "tooltip:\"刷新\"",
+        "ariaLabel:\"Refresh\"": "ariaLabel:\"刷新\"",
+        "badge:a.isConflict?\"Conflict\":k": "badge:a.isConflict?\"冲突\":k",
+        "label:\"Uncommitted\"": "label:\"未提交变更\"",
+        "subtitle:\"Staged index changes and working tree changes\"": "subtitle:\"暂存区索引变更与工作树变更\"",
+        "label:\"Branch\"": "label:\"分支变更\"",
+        "subtitle:\"All changes since the branch point\"": "subtitle:\"自分支创建点以来的所有变更\"",
+        "label:\"Agent Edits\"": "label:\"智能体编辑\"",
+        "subtitle:\"Files modified by the agent in this conversation\"": "subtitle:\"当前会话中智能体修改的文件\"",
+        "title:\"Files Changed\"": "title:\"变更的文件\"",
+        "title:\"Added (Staged)\"": "title:\"新增 (已暂存)\"",
+        "title:\"Untracked (Unstaged)\"": "title:\"未跟踪 (未暂存)\"",
+        "title:\"Staged Changes\"": "title:\"已暂存变更\"",
+        "label:\"Include unstaged changes\"": "label:\"包含未暂存的变更\"",
+        "tooltip:\"Stage change\"": "tooltip:\"暂存变更\"",
+        "tooltip:\"Unstage change\"": "tooltip:\"取消暂存变更\"",
+        "tooltip:\"Discard unstaged changes\"": "tooltip:\"放弃未暂存的变更\"",
+        "tooltip:\"Stage and commit all changes\"": "tooltip:\"暂存并提交所有变更\"",
+        "tooltip:\"Commit staged changes\"": "tooltip:\"提交已暂存的变更\"",
+        "tooltip:\"Stage and amend all changes into the current commit\"": "tooltip:\"暂存并追加合并所有变更至当前提交 (Amend)\"",
+        "tooltip:\"Amend staged changes into the current commit\"": "tooltip:\"将已暂存的变更追加合并至当前提交 (Amend)\"",
+        "title:\"Generating commit message...\"": "title:\"正在生成提交信息...\"",
+        "title:\"Failed to Generate Commit Message\"": "title:\"生成提交信息失败\"",
+        "title:\"Commit succeeded\"": "title:\"提交成功\"",
+        "title:\"Failed to Commit\"": "title:\"提交失败\"",
+        "title:\"Push succeeded\"": "title:\"推送成功\"",
+        "title:\"Failed to Push\"": "title:\"推送失败\"",
+        "title:\"Failed to Amend\"": "title:\"追加提交失败\"",
+        "title:\"Failed to revert conversation\"": "title:\"还原会话失败\"",
+        "label:\"Revert file changes\"": "label:\"还原文件更改\"",
+        "disabledReason:a?.inConflict?\"Resolve conflicts first\"": "disabledReason:a?.inConflict?\"请先解决冲突\"",
+        "disabledReason:a?.hasPushRemote===!1?\"No remote configured\"": "disabledReason:a?.hasPushRemote===!1?\"未配置远程仓库\"",
+        "message:\"Created a new branch on GitHub.\"": "message:\"已在 GitHub 上创建新分支。\"",
+        "linkLabel:\"Open a pull request\"": "linkLabel:\"创建 Pull Request\"",
+        "message:\"The branch was pushed to GitLab.\"": "message:\"分支已成功推送到 GitLab。\"",
+        "linkLabel:\"Open a merge request\"": "linkLabel:\"创建 Merge Request\"",
+        "message:\"Created a new branch on Origin.\"": "message:\"已在 Origin 上创建新分支。\"",
+        "message:\"The change was pushed to Gerrit.\"": "message:\"变更已成功推送到 Gerrit。\"",
+        "linkLabel:\"Open the change\"": "linkLabel:\"查看该变更\"",
+        "message:\"The remote shared a link for this push.\"": "message:\"远程仓库返回了本次推送的链接。\"",
+        "linkLabel:\"Open link\"": "linkLabel:\"打开链接\"",
+        "tooltip:\"Kill Terminal\"": "tooltip:\"终止终端进程\"",
+        "tooltip:\"Split Terminal\"": "tooltip:\"拆分终端\"",
+        "label:\"Toggle Terminal\"": "label:\"切换终端\"",
+        "label:\"Split Terminal\"": "label:\"拆分终端\"",
+        "label:\"Close Terminal Tab\"": "label:\"关闭终端标签页\"",
+        "label:\"New Terminal Tab\"": "label:\"新建终端标签页\"",
+        "label:\"Equalize Split Panes\"": "label:\"均分拆分面板\"",
+        "label:\"Terminal: Add to Chat\"": "label:\"终端：添加到对话\"",
+        "description:\"Resume it to open a new terminal. Anything that was running in this one has stopped.\"": "description:\"恢复终端以打开新终端。当前终端中原先运行的所有进程均已停止。\"",
+        "\"Ran command:": "\"已运行命令:",
+        "\"Running command:": "\"正在运行命令:",
+        "Running command": "正在运行命令",
+        "\"Process exited with code": "\"进程已退出，退出代码:",
+        "title:c.lastError||\"Process exited with an error\"": "title:c.lastError||\"进程异常退出\"",
+        "\"Exited with code": "\"已退出，代码:",
+        "Validation timed out.": "校验超时。",
+        "Error while searching": "搜索时出错",
+        "Error while searching filesystem": "搜索文件系统时出错",
+        "Error while semantic searching": "语义搜索时出错",
+        "Error while analyzing directory": "分析目录时出错",
+        "Error while searching the web": "搜索网页时出错",
+        "\"Used MCP tool:": "\"已使用 MCP 工具:",
+        "\"Generated image: \"": "\"已生成图像: \"",
+        "label:\"Always Allow\"": "label:\"始终允许\"",
+        "label:\"Allow Once\"": "label:\"仅允许一次\"",
+        "label:\"Deny\"": "label:\"拒绝\"",
+        "label:\"Enable Terminal Sandbox\"": "label:\"启用终端沙箱\"",
+        "description:\"Run terminal commands with sandbox restrictions.\"": "description:\"在沙箱安全限制下运行终端命令。\"",
+        "label:\"Sandbox Allow Network\"": "label:\"沙箱允许网络访问\"",
+        "description:\"Allow sandboxed commands to make network requests.\"": "description:\"允许沙箱中的命令发起外部网络请求。\"",
+        "label:\"Commands Outside Sandbox\"": "label:\"沙箱外执行命令白名单\"",
+        "label:\"Allowed Terminal Commands\"": "label:\"允许的终端命令白名单\"",
+        "label:\"Enable Sandbox Mode\"": "label:\"启用沙箱模式\"",
+        "description:\"Restricts agent tools to a secure, isolated local sandbox.\"": "description:\"将智能体执行工具严格限制在安全隔离的本地沙箱环境中。\"",
+        "tooltip:\"managed by your organization\"": "tooltip:\"由您的企业/组织策略统一管理\"",
+        "tooltip:\"Terminal sandbox is not supported on this platform\"": "tooltip:\"当前操作系统平台不支持终端沙箱\"",
+        "description:\"A shell setup script run before every command the agent executes.\"": "description:\"智能体执行每个命令前预先运行的 Shell 初始化脚本。\"",
+        "placeholder:\"example:\nsource ~/.jetski_shell_setup\"": "placeholder:\"示例:\nsource ~/.jetski_shell_setup\"",
+        "title:\"Command is required\"": "title:\"必须指定命令内容\"",
+        "tooltip:\"Cancel All Tasks\"": "tooltip:\"取消所有后台任务\"",
+        "tooltip:\"Cancel Task\"": "tooltip:\"取消任务\"",
+        "ariaLabel:\"Cancel Task\"": "ariaLabel:\"取消任务\"",
+        "description:\"Background Task\"": "description:\"后台任务\"",
+        "description:\"Background task\"": "description:\"后台任务\"",
+        "title:\"Delete Task\"": "title:\"删除任务\"",
+        "label:\"Scheduled Tasks\"": "label:\"计划任务\"",
+        "case \"macos\":return\"Reveal in Finder\"": "case \"macos\":return\"在访达中显示\"",
+        "case \"windows\":return\"Show in File Explorer\"": "case \"windows\":return\"在资源管理器中显示\"",
+        "case \"linux\":return\"Show in File Manager\"": "case \"linux\":return\"在文件管理器中显示\"",
+        "default:return\"Show in File Explorer\"": "default:return\"在资源管理器中显示\"",
+        "label:\"Open Folder\"": "label:\"打开文件夹\"",
+        "title:\"Open File\"": "title:\"打开文件\"",
+        "title:\"Recent Files\"": "title:\"最近打开的文件\"",
+        "label:\"Upload Files\"": "label:\"上传文件\"",
+        "label:\"Collapse All Folders\"": "label:\"全部折叠文件夹\"",
+        "label:\"Expand All Folders\"": "label:\"全部展开文件夹\"",
+        "label:\"Fork conversation in this folder\"": "label:\"在此文件夹中分叉会话\"",
+        "tooltip:\"Keeps working in this folder. Nothing is copied.\"": "tooltip:\"在此文件夹中继续工作。不会复制任何文件。\"",
+        "historicalTooltip:\"Rewinds the conversation only. Files in this folder stay as they are now.\"": "historicalTooltip:\"仅回退会话历史。此文件夹中的文件保持当前状态。\"",
+        "accessibilityLabel:\"Directory Viewer\"": "accessibilityLabel:\"目录查看器\"",
+        "label:\"Cut\"": "label:\"剪切\"",
+        "label:\"Copy\"": "label:\"复制\"",
+        "label:\"Paste\"": "label:\"粘贴\"",
+        "label:\"Select All\"": "label:\"全选\"",
+        "label:\"Copy Path\"": "label:\"复制路径\"",
+        "tooltip:\"Copy Path\"": "tooltip:\"复制路径\"",
+        "aria-label:\"Copy path\"": "aria-label:\"复制路径\"",
+        "label:\"Copy Relative Path\"": "label:\"复制相对路径\"",
+        "tooltip:\"Copy Relative Path\"": "tooltip:\"复制相对路径\"",
+        "label:\"Delete\"": "label:\"删除\"",
+        "label:\"Rename\"": "label:\"重命名\"",
+        "label:\"File Access Rules\"": "label:\"文件访问安全规则\"",
+        "description:\"Configures how the agent tries to access files outside of its workspace.\"": "description:\"配置智能体尝试访问其工作区外部文件时的处理方式。\"",
+        "label:\"Agent Non-Workspace File Access\"": "label:\"智能体非工作区文件访问\"",
+        "description:\"Allow the agent to automatically view and edit files outside the current workspace.\"": "description:\"允许智能体自动查看和编辑当前工作区外部的文件。\"",
+        "title:\"Shortcuts\",description:\"Keyboard shortcuts for quick navigation and control.\"": "title:\"快捷键\",description:\"用于快速导航和操作控制的键盘快捷键。\"",
+        "aria-label:\"Reset all shortcuts to defaults\"": "aria-label:\"将所有快捷键恢复为默认设置\"",
+        "placeholder:c=\"Search shortcuts...\"": "placeholder:c=\"搜索快捷键...\"",
+        "\"aria-label\":\"Search shortcuts\"": "\"aria-label\":\"搜索快捷键\"",
+        "\"aria-label\":\"Clear search\"": "\"aria-label\":\"清空搜索\"",
+        "navigation:\"Navigation\"": "navigation:\"导航\"",
+        "conversation:\"Conversation\"": "conversation:\"会话\"",
+        "layout:\"Layout Controls\"": "layout:\"布局控制\"",
+        "label:\"Open Conversation in New Tab\"": "label:\"在新标签页中打开会话\"",
+        "label:\"Edit Shortcut\"": "label:\"编辑快捷键\"",
+        "tooltip:\"Edit Shortcut\"": "tooltip:\"编辑快捷键\"",
+        "label:\"Add Shortcut\"": "label:\"添加快捷键\"",
+        "label:\"Remove Shortcut\"": "label:\"移除快捷键\"",
+        "tooltip:\"Remove Shortcut\"": "tooltip:\"移除快捷键\"",
+        "label:\"Reset to Default\"": "label:\"恢复默认设置\"",
+        "`Conflict: also assigned to ${": "`冲突：同时已分配给 ${",
+        "`Conflicts with \"${": "`与“${",
+        "}\" (press Enter to replace)`": "}”发生冲突（按 Enter 键替换）`",
+        "acceptAgentStep:{label:\"Accept Step\"}": "acceptAgentStep:{label:\"接受步骤\"}",
+        "rejectAgentStep:{label:\"Reject Step\"}": "rejectAgentStep:{label:\"拒绝步骤\"}",
+        "openConversationPicker:{label:\"Open Conversation Picker\"}": "openConversationPicker:{label:\"打开会话选择器\"}",
+        "openConvoPickerV2:{label:\"Search Conversations\"}": "openConvoPickerV2:{label:\"搜索会话\"}",
+        "openWorkspaceSelector:{label:\"Open Workspace Selector\"}": "openWorkspaceSelector:{label:\"打开工作区选择器\"}",
+        "openInCider:{label:\"Open in Cider\"}": "openInCider:{label:\"在 Cider 中打开\"}",
+        "mentionSelection:{label:\"Add to Chat\"}": "mentionSelection:{label:\"添加到对话\"}",
+        "insertMentionSelection:{label:\"Add to Chat\"}": "insertMentionSelection:{label:\"添加到对话\"}",
+        "insertQuoteSelection:{label:\"Quote Selection\"}": "insertQuoteSelection:{label:\"引用所选内容\"}",
+        "insertCodeSearchSelection:{label:\"Open in Code Search\"}": "insertCodeSearchSelection:{label:\"在代码搜索中打开\"}",
+        "artifactStartComment:{label:\"Comment on Selection\"}": "artifactStartComment:{label:\"对所选内容发表评论\"}",
+        "focusInput:{label:\"Focus Input\"}": "focusInput:{label:\"聚焦输入框\"}",
+        "zoomIn:{label:\"Zoom In\"}": "zoomIn:{label:\"放大\"}",
+        "zoomOut:{label:\"Zoom Out\"}": "zoomOut:{label:\"缩小\"}",
+        "zoomReset:{label:\"Reset Zoom\"}": "zoomReset:{label:\"重置缩放\"}",
+        "findInPane:{label:\"Find in Pane\"}": "findInPane:{label:\"在面板中查找\"}",
+        "goBack:{label:\"Go Back\"}": "goBack:{label:\"后退\"}",
+        "goForward:{label:\"Go Forward\"}": "goForward:{label:\"前进\"}",
+        "goBackInAuxPane:{label:\"Go Back in Pane\"}": "goBackInAuxPane:{label:\"在面板中后退\"}",
+        "goForwardInAuxPane:{label:\"Go Forward in Pane\"}": "goForwardInAuxPane:{label:\"在面板中前进\"}",
+        "completeOnboardingStep:{label:\"Complete Onboarding Step\"}": "completeOnboardingStep:{label:\"完成新手引导步骤\"}",
+        "codeSearch:{label:\"Code Search\"}": "codeSearch:{label:\"代码搜索\"}",
+        "vcs:{label:\"Open Commit Graph\"}": "vcs:{label:\"打开提交图谱\"}",
+        "openConversationHistory:{label:\"Open Conversation History\"}": "openConversationHistory:{label:\"打开会话历史记录\"}",
+        "openScheduledTasks:{label:\"Scheduled Tasks\"}": "openScheduledTasks:{label:\"计划任务\"}",
+        "[\"conversation.selectNext\"]:{label:\"Select Next Conversation\"}": "[\"conversation.selectNext\"]:{label:\"选择下一个会话\"}",
+        "[\"conversation.selectPrevious\"]:{label:\"Select Previous Conversation\"}": "[\"conversation.selectPrevious\"]:{label:\"选择上一个会话\"}",
+        "[\"conversation.moveUp\"]:{label:\"Move Conversation Up\"}": "[\"conversation.moveUp\"]:{label:\"上移会话\"}",
+        "[\"conversation.moveDown\"]:{label:\"Move Conversation Down\"}": "[\"conversation.moveDown\"]:{label:\"下移会话\"}",
+        "openShortcutsOverlay:{label:\"Open Keyboard Shortcuts\"}": "openShortcutsOverlay:{label:\"打开快捷键面板\"}",
+        "openTrajectory:{label:\"Open Conversation\"}": "openTrajectory:{label:\"打开会话\"}",
+        "markAsReadHistory:{label:\"Mark as Read\"}": "markAsReadHistory:{label:\"标记为已读\"}",
+        "markAsUnreadHistory:{label:\"Mark as Unread\"}": "markAsUnreadHistory:{label:\"标记为未读\"}",
+        "deleteHistory:{label:\"Delete Conversation\"}": "deleteHistory:{label:\"删除会话\"}",
+        "archiveRestoreHistory:{label:\"Archive / Restore\"}": "archiveRestoreHistory:{label:\"归档 / 恢复\"}",
+        "[\"terminal.sendSelectionToAgent\"]:{label:\"Terminal: Add to Chat\"}": "[\"terminal.sendSelectionToAgent\"]:{label:\"终端：添加到对话\"}",
+        "refreshGcert:{label:\"Refresh gcert Credentials\"}": "refreshGcert:{label:\"刷新 gcert 凭据\"}",
+        "[\"sidebar.toggleSidebar\"]:{label:\"Toggle Sidebar\"}": "[\"sidebar.toggleSidebar\"]:{label:\"切换侧边栏\"}",
+        "[\"sidebar.feedback\"]:{label:\"Provide Feedback\"}": "[\"sidebar.feedback\"]:{label:\"提供反馈\"}",
+        "[\"conversationView.copyConversationMarkdown\"]:{label:\"Copy Conversation Markdown\"}": "[\"conversationView.copyConversationMarkdown\"]:{label:\"复制会话 Markdown\"}",
+        "[\"conversationView.archiveConversation\"]:{label:\"Archive This Conversation\"}": "[\"conversationView.archiveConversation\"]:{label:\"归档此会话\"}",
+        "[\"conversationView.pinConversation\"]:{label:\"Pin This Conversation\"}": "[\"conversationView.pinConversation\"]:{label:\"固定此会话\"}",
+        "[\"conversationView.unpinConversation\"]:{label:\"Unpin This Conversation\"}": "[\"conversationView.unpinConversation\"]:{label:\"取消固定此会话\"}",
+        "[\"conversationView.findInConversation\"]:{label:\"Find in Conversation\"}": "[\"conversationView.findInConversation\"]:{label:\"在会话中查找\"}",
+        "[\"conversations.markAllAsRead\"]:{label:\"Mark All as Read\"}": "[\"conversations.markAllAsRead\"]:{label:\"全部标记为已读\"}",
+        "[\"conversationView.markAsRead\"]:{label:\"Mark This Conversation as Read\"}": "[\"conversationView.markAsRead\"]:{label:\"将此会话标记为已读\"}",
+        "[\"conversationView.markAsUnread\"]:{label:\"Mark This Conversation as Unread\"}": "[\"conversationView.markAsUnread\"]:{label:\"将此会话标记为未读\"}",
+        "[\"conversationView.renameConversation\"]:{label:\"Rename This Conversation\"}": "[\"conversationView.renameConversation\"]:{label:\"重命名此会话\"}",
+        "[\"conversationView.moveToNewGroup\"]:{label:\"Move to New Group\"}": "[\"conversationView.moveToNewGroup\"]:{label:\"移动到新分组\"}",
+        "[\"conversationView.removeFromGroup\"]:{label:\"Remove from Group\"}": "[\"conversationView.removeFromGroup\"]:{label:\"从分组中移除\"}",
+        "[\"conversationView.openTrajectoryDebugView\"]:{label:\"Open Trajectory Debug View\"}": "[\"conversationView.openTrajectoryDebugView\"]:{label:\"打开轨迹调试视图\"}",
+        "[\"conversationView.copyConversationId\"]:{label:\"Copy Conversation ID\"}": "[\"conversationView.copyConversationId\"]:{label:\"复制会话 ID\"}",
+        "[\"conversationView.copyTrajectoryId\"]:{label:\"Copy Trajectory ID\"}": "[\"conversationView.copyTrajectoryId\"]:{label:\"复制轨迹 ID\"}",
+        "downloadDiagnostics:{label:\"Download Diagnostics\"}": "downloadDiagnostics:{label:\"下载诊断信息\"}",
+        "toggleTheme:{label:\"Toggle Between Light/Dark Themes\"}": "toggleTheme:{label:\"在浅色/深色主题之间切换\"}",
+        "[\"auxPane.selectPreviousTab\"]:{label:\"Previous Side Panel Tab\"}": "[\"auxPane.selectPreviousTab\"]:{label:\"上一个侧边面板标签页\"}",
+        "[\"auxPane.selectNextTab\"]:{label:\"Next Side Panel Tab\"}": "[\"auxPane.selectNextTab\"]:{label:\"下一个侧边面板标签页\"}",
+        "[\"sidebar.collapseAllFolders\"]:{label:\"Collapse All Folders\"}": "[\"sidebar.collapseAllFolders\"]:{label:\"全部折叠文件夹\"}",
+        "[\"sidebar.expandAllFolders\"]:{label:\"Expand All Folders\"}": "[\"sidebar.expandAllFolders\"]:{label:\"全部展开文件夹\"}",
+        "selectAllInView:{label:\"Select All\"}": "selectAllInView:{label:\"全选\"}",
+        "terminalSelectAll:{label:\"Select All\"}": "terminalSelectAll:{label:\"全选\"}",
+        "cancelInvocation:{label:\"Cancel Generation\"}": "cancelInvocation:{label:\"取消生成\"}",
+        "toggleModelSelector:{label:\"Toggle Model Selector\"}": "toggleModelSelector:{label:\"切换模型选择器\"}",
+        "startVoiceRecording:{label:\"Start Voice Recording\"}": "startVoiceRecording:{label:\"开始语音录制\"}",
+        "stopVoiceRecording:{label:\"Stop Voice Recording\"}": "stopVoiceRecording:{label:\"停止语音录制\"}",
+        "toggleVoiceRecording:{label:\"Toggle Voice Recording\"}": "toggleVoiceRecording:{label:\"切换语音录制\"}",
+        "toggleVoiceMute:{label:\"Mute Voice Mic\"}": "toggleVoiceMute:{label:\"麦克风静音\"}",
+        "toggleVoiceAgentMute:{label:\"Mute Voice Speaker\"}": "toggleVoiceAgentMute:{label:\"智能体扬声器静音\"}",
+        "toggleBottomPane:{label:\"Toggle Terminal\"}": "toggleBottomPane:{label:\"切换终端\"}",
+        "toggleFileViewer:{label:\"Toggle File Viewer\"}": "toggleFileViewer:{label:\"切换文件查看器\"}",
+        "toggleProjectSelector:{label:\"Toggle Project Selector\"}": "toggleProjectSelector:{label:\"切换项目选择器\"}",
+        "toggleEnvironmentSelector:{label:\"Toggle Environment Selector\"}": "toggleEnvironmentSelector:{label:\"切换运行环境选择器\"}",
+        "toggleAuxPane:{label:\"Toggle Side Panel\"}": "toggleAuxPane:{label:\"切换侧边面板\"}",
+        "toggleMaximizeAuxPane:{label:\"Toggle Maximize Side Panel\"}": "toggleMaximizeAuxPane:{label:\"切换侧边面板最大化\"}",
+        "toggleOverviewPanel:{label:\"Toggle Overview Panel\"}": "toggleOverviewPanel:{label:\"切换概览面板\"}",
+        "openNewConversation:{label:\"New Conversation\"}": "openNewConversation:{label:\"新建会话\"}",
+        "openNewWindow:{label:\"New Window\"}": "openNewWindow:{label:\"新建窗口\"}",
+        "closeTab:{label:\"Close Tab\"}": "closeTab:{label:\"关闭标签页\"}",
+        "[\"settings.open\"]:{label:\"Open Settings\"}": "[\"settings.open\"]:{label:\"打开设置\"}",
+        "continueResponse:{label:\"Continue Response\"}": "continueResponse:{label:\"继续回复\"}",
+        "createSplitTerminal:{label:\"Split Terminal\"}": "createSplitTerminal:{label:\"拆分终端\"}",
+        "splitConvoVertical:{label:\"Split Conversation Vertically\"}": "splitConvoVertical:{label:\"垂直拆分会话\"}",
+        "splitConvoHorizontal:{label:\"Split Conversation Horizontally\"}": "splitConvoHorizontal:{label:\"水平拆分会话\"}",
+        "equalizeSplitPanes:{label:\"Equalize Split Panes\"}": "equalizeSplitPanes:{label:\"均分拆分面板\"}",
+        "closeTerminalTab:{label:\"Close Terminal Tab\"}": "closeTerminalTab:{label:\"关闭终端标签页\"}",
+        "openNewTerminalTab:{label:\"New Terminal Tab\"}": "openNewTerminalTab:{label:\"新建终端标签页\"}",
+        "openNewAuxTab:{label:\"New Tab\"}": "openNewAuxTab:{label:\"新建标签页\"}",
+        "reopenClosedAuxTab:{label:\"Reopen Closed Tab\"}": "reopenClosedAuxTab:{label:\"重新打开已关闭标签页\"}",
+        "openCommandPalette:{label:\"File Picker\"}": "openCommandPalette:{label:\"文件选择器\"}",
+        "openCommandPaletteWithPrefix:{label:\"Open Command Palette\"}": "openCommandPaletteWithPrefix:{label:\"打开命令面板\"}",
 }
 
     print("Applying translations...")
@@ -4683,10 +5119,194 @@ def main():
     "Enable Word Wrap (Alt+Z)": "启用自动换行 (Alt+Z)",
     "Preview unavailable due to a notebook parsing error.": "由于 Notebook 解析错误，预览暂不可用。",
     "This shortcut is reserved by browser tabs and may not trigger in Web mode. It works in the Desktop Hub or installed PWA.": "此快捷键已被浏览器标签页保留，在 Web 模式下可能无法触发。它可在桌面端 Hub 或已安装的 PWA 中正常使用。",
+    // --- 2.31.0 Dynamic Audit Entries ---
+    "Create Project": "新建项目",
+    "Delete Project": "删除项目",
+    "A project with this name already exists.": "已存在同名项目。",
+    "Failed to resolve folder": "解析文件夹失败",
+    "Are you sure you want to delete the project ": "您确定要删除该项目 ",
+    "This will permanently delete ": "这将永久删除 ",
+    "within it.": "内包含的全部内容。",
+    "For your plan, telemetry is force disabled.": "在您当前的套餐方案下，遥测数据收集已强制停用。",
+    "General usage patterns (e.g., feature adoption, active user counts)": "通用使用模式（例如功能采纳率、活跃用户数等）",
+    "Terms of Service": "服务条款",
+    "Privacy Policy": "隐私政策",
+    "Custom Models": "自定义大模型列表",
+    "This subagent was killed and can no longer be messaged.": "此子智能体已被终止，无法再发送消息。",
+    "Typing into Browser": "正在浏览器中输入",
+    "Typed into Browser": "已在浏览器中输入",
+    "Selecting Option in Browser": "正在浏览器中选择选项",
+    "Selected Option in Browser": "已在浏览器中选择选项",
+    "Retrieving Browser Pages": "正在获取浏览器页面",
+    "Retrieved Browser Pages": "已获取浏览器页面",
+    "Scroll in Browser": "在浏览器中滚动",
+    "Scrolled in Browser": "已在浏览器中滚动",
+    "Pick a model to change it.": "请选择一个模型以修改它。",
+    "Select a model using the model selector in the input box": "请使用输入框中的模型选择器选择一个模型",
+    "No models are available for your current project or account. Please check your project settings and IAM permissions.": "您当前的项目或账号没有可用模型。请检查您的项目设置和 IAM 权限。",
+    "New models have been enabled for you!": "已为您启用新模型！",
+    "Select a model in the model selector": "在模型选择器中选择模型",
+    "Your AI credits balance is too low to continue.": "您的 AI 点数余额过低，无法继续。",
+    "Your session has expired. Please log back in to continue.": "您的登录会话已过期，请重新登录以继续。",
+    "This error is likely temporary. You can prompt the model to try again after some time.": "此错误可能只是暂时的。您可以稍后提示模型重试。",
+    "You can prompt the model to try again or start a new conversation if the error persists.": "若错误持续存在，您可以提示模型重试，或开启新会话。",
+    "No upcoming run.": "暂无即将执行的排期。",
+    "Paused. Resume it to schedule the next run.": "已暂停。恢复后将排期下一次运行。",
+    "No Model Selected": "未选择模型",
+    "Ask /btw": "使用 /btw 侧边提问",
+    "Leave a comment": "添加批注",
+    "No remote configured": "未配置远程仓库",
+    "No commits to push": "没有需要推送的提交",
+    "Not on a branch": "当前未处于分支上",
+    "No changes to amend": "没有可追加的变更",
+    "No commit to amend": "没有可追加的提交",
+    "Running command": "正在运行命令",
+    "\"Process exited with code": "\"进程已退出，退出代码:",
+    "\"Exited with code": "\"已退出，代码:",
+    "Validation timed out.": "校验超时。",
+    "Error while searching": "搜索时出错",
+    "Error while searching filesystem": "搜索文件系统时出错",
+    "Error while running command": "执行命令时出错",
+    "Error while semantic searching": "语义搜索时出错",
+    "Error while analyzing directory": "分析目录时出错",
+    "Error while searching the web": "搜索网页时出错",
+    "Error while running MCP tool": "执行 MCP 工具时出错",
+    "`Conflicts with \"${": "`与“${",
+    "}\" (press Enter to replace)`": "}”发生冲突（按 Enter 键替换）`",
 };;;
 
 
   const translateDynamicRegex = (text) => {
+    // --- 2.31.0 Side Questions, Quotas & Agent Team Dynamic Regex ---
+    // 
+    if (/^Show (\d+) more subagents?$/.test(t)) {
+      return text.replace(/^Show (\d+) more subagents?$/, "展开另外 $1 个子智能体");
+    }
+    // 
+    if (/^\((\d+) subagents?\)$/.test(t)) {
+      return text.replace(/^\((\d+) subagents?\)$/, "($1 个子智能体)");
+    }
+    // 
+    if (/^(\d+) subagents?$/.test(t)) {
+      return text.replace(/^(\d+) subagents?$/, "$1 个子智能体");
+    }
+    // 
+    if (/^Open Subagent: (.+)$/.test(t)) {
+      return text.replace(/^Open Subagent: (.+)$/, "打开子智能体: $1");
+    }
+    // 
+    if (/^Messaging (.+)$/.test(t)) {
+      return text.replace(/^Messaging (.+)$/, "正在向 $1 发送消息");
+    }
+    // 
+    if (/^Messaged (.+)$/.test(t)) {
+      return text.replace(/^Messaged (.+)$/, "已向 $1 发送消息");
+    }
+    // 
+    if (/^(.+?)\s+Pick a model to change it\.$/.test(t)) {
+      return text.replace(/^(.+?)\s+Pick a model to change it\.$/, "$1 请选择一个模型以修改它。");
+    }
+    // 
+    if (/^Resets in <1m$/.test(t)) {
+      return text.replace(/^Resets in <1m$/, "< 1 分钟后重置");
+    }
+    // 
+    if (/^Resets in (\d+)d (\d+)h$/.test(t)) {
+      return text.replace(/^Resets in (\d+)d (\d+)h$/, "$1 天 $2 小时后重置");
+    }
+    // 
+    if (/^Resets in (\d+)d$/.test(t)) {
+      return text.replace(/^Resets in (\d+)d$/, "$1 天后重置");
+    }
+    // 
+    if (/^Resets in (\d+)h (\d+)m$/.test(t)) {
+      return text.replace(/^Resets in (\d+)h (\d+)m$/, "$1 小时 $2 分钟后重置");
+    }
+    // 
+    if (/^Resets in (\d+)h$/.test(t)) {
+      return text.replace(/^Resets in (\d+)h$/, "$1 小时后重置");
+    }
+    // 
+    if (/^Resets in (\d+)m$/.test(t)) {
+      return text.replace(/^Resets in (\d+)m$/, "$1 分钟后重置");
+    }
+    // 
+    if (/^Select model, current: (.+)$/.test(t)) {
+      return text.replace(/^Select model, current: (.+)$/, "选择模型，当前: $1");
+    }
+    // 
+    if (/^Select model with (.+)$/.test(t)) {
+      return text.replace(/^Select model with (.+)$/, "选择包含 $1 的模型");
+    }
+    // 
+    if (/^(\d+) Help · (\d+) Side Questions?$/.test(t)) {
+      return text.replace(/^(\d+) Help · (\d+) Side Questions?$/, "$1 项帮助 · $2 个侧边提问");
+    }
+    // 
+    if (/^(\d+) Help$/.test(t)) {
+      return text.replace(/^(\d+) Help$/, "$1 项帮助");
+    }
+    // 
+    if (/^(\d+) Side Questions?$/.test(t)) {
+      return text.replace(/^(\d+) Side Questions?$/, "$1 个侧边提问");
+    }
+    // 
+    if (/^View (\d+) help(?: items?)? and (\d+) side questions?$/.test(t)) {
+      return text.replace(/^View (\d+) help(?: items?)? and (\d+) side questions?$/, "查看 $1 项帮助与 $2 个侧边提问");
+    }
+    // 
+    if (/^View (\d+) help(?: items?)?$/.test(t)) {
+      return text.replace(/^View (\d+) help(?: items?)?$/, "查看 $1 项帮助");
+    }
+    // 
+    if (/^View (\d+) side questions?$/.test(t)) {
+      return text.replace(/^View (\d+) side questions?$/, "查看 $1 个侧边提问");
+    }
+    // 
+    if (/^Delete side question: (.+)$/.test(t)) {
+      return text.replace(/^Delete side question: (.+)$/, "删除侧边提问: $1");
+    }
+    // 
+    if (/^Side question failed: (.+)$/.test(t)) {
+      return text.replace(/^Side question failed: (.+)$/, "侧边提问失败: $1");
+    }
+    // 
+    if (/^Question (\d+) of (\d+)$/.test(t)) {
+      return text.replace(/^Question (\d+) of (\d+)$/, "第 $1 个问题，共 $2 个");
+    }
+    // 
+    if (/^Proceed with implementation plan and (\d+) comments?$/.test(t)) {
+      return text.replace(/^Proceed with implementation plan and (\d+) comments?$/, "按实施规划及 $1 条批注继续执行");
+    }
+    // 
+    if (/^Review (\d+) comments?$/.test(t)) {
+      return text.replace(/^Review (\d+) comments?$/, "查看 $1 条评论");
+    }
+    // 
+    if (/^Proceed • (\d+)$/.test(t)) {
+      return text.replace(/^Proceed • (\d+)$/, "继续执行 • $1");
+    }
+    // 
+    if (/^(\d+) comments? in (.+)$/.test(t)) {
+      return text.replace(/^(\d+) comments? in (.+)$/, "$2 中的 $1 条批注");
+    }
+    // 
+    if (/^Thought for (\d+)s$/.test(t)) {
+      return text.replace(/^Thought for (\d+)s$/, "已深度思考 $1 秒");
+    }
+    // 
+    if (/^Thinking for (\d+)s$/.test(t)) {
+      return text.replace(/^Thinking for (\d+)s$/, "思考中 ($1 秒)");
+    }
+    // 
+    if (/^Select at most (\d+) items?$/.test(t)) {
+      return text.replace(/^Select at most (\d+) items?$/, "最多选择 $1 项");
+    }
+    // 
+    if (/^Running (.+)$/.test(t)) {
+      return text.replace(/^Running (.+)$/, "正在运行 $1");
+    }
+
     if (!text || typeof text !== 'string') return text;
     const t = text.trim();
     // --- 2.30.0 Side Questions & Agent Team Dynamic Regex ---
@@ -5111,10 +5731,10 @@ def main():
         print("[!] Warning: slash component pattern not found in bundle!")
 
     # ---------------- 注入设置侧边栏原生中文 label ----------------
-    zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Project 4K",label:"Project 4K"},{screen:"Shortcuts",label:"快捷键设置"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Developer",label:"开发者选项"},{screen:"Running",label:"运行状态"},{screen:"Jetski Chat",label:"对话流配置"},{screen:"Regroup Google3 Chats",label:"重组 Google3 会话"}]'
+    zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"Projects",label:"项目设置"},{screen:"Environments",label:"环境配置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Shortcuts",label:"快捷键设置"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Browser",label:"浏览器设置"},{screen:"Developer",label:"开发者选项"},{screen:"Running",label:"后台运行项"},{screen:"Jetski Chat",label:"对话流配置"}]'
     # 匹配可能包含英文或已汉化标签的 ogb
-    # 变量名每版都会变（2.24 ogb / 2.25 Cgb），按结构动态定位
-    ogb_pattern = r'var ([\w$]+)=\[\{screen:"General"\}[^\]]{0,1200}?\{screen:"Regroup Google3 Chats"\}\]'
+    # 变量名每版都会变（2.24 ogb / 2.25 Cgb / 2.30 eBb / 2.31 LBb），按结构动态定位
+    ogb_pattern = r'var ([\w$]+)=\[\{screen:"General"\}[^\]]{0,1500}?(?:\{screen:"Jetski Chat"\}|\{screen:"Regroup Google3 Chats"\})\]'
     _om = re.search(ogb_pattern, content)
     if os.environ.get("CHM_NO_INJECT"):
         pass
