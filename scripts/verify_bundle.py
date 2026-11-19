@@ -9,25 +9,42 @@ import re
 import sys
 import collections
 
-CJK = r'[^"\n\\]*[\u4e00-\u9fff][^"\n\\]*'
+CJK_D = r'[^"\n\\]*[\u4e00-\u9fff][^"\n\\]*'
+CJK_S = r"[^'\n\\]*[\u4e00-\u9fff][^'\n\\]*"
+STR_CJK = rf'(?:"({CJK_D})"|\'({CJK_S})\')'
 
 SENS_KEYS = (
-    "type|kind|role|id|key|name|class|className|state|status|mode|action|event|category|"
-    "level|severity|direction|variant|source|target|language|value|view|screen|group|step|"
-    "phase|stage|result|reason|origin|icon|color|unit|format|method|op|channel|provider|"
-    "model|engine|backend|scope|owner|author|sender|intent|outcome|tab|section|pane|part|"
-    "field|prop|attr|selector|tag|ns|prefix|suffix|alias|code|slug|token|topic|targetScreen|"
-    "activeScreen|modalType|home|unsandboxed|binding|shortcut|command|when|scheme|protocol|"
-    "extension|package|module|file|path|convoState|itemType|nodeType|blockType|entryType|"
-    "viewType|paneType|argName|param|option|flag|groupKey|displayName"
+    "type|kind|kind2|role|id|ids|key|keys|name|names|class|className|state|status|mode|"
+    "action|event|category|level|severity|direction|variant|source|target|language|value|"
+    "view|screen|group|step|phase|stage|result|reason|origin|icon|color|unit|format|method|"
+    "op|channel|provider|model|engine|backend|scope|owner|author|sender|intent|outcome|tab|"
+    "section|pane|part|field|prop|attr|selector|tag|ns|prefix|suffix|alias|code|slug|token|"
+    "topic|targetScreen|activeScreen|modalType|home|unsandboxed|binding|shortcut|command|when|"
+    "scheme|protocol|extension|package|module|file|path|convoState|itemType|nodeType|blockType|"
+    "entryType|viewType|paneType|argName|param|option|flag|groupKey|displayName|stateMachine|"
+    "conversationId|cascadeId|sectionId|screenId|viewId|tabId|paneId|itemId|addr|preset"
 )
 
 CHECKS = [
-    ("相等比较中的中文", r'(?:===|!==|==)\s*"(' + CJK + r')"'),
-    ("switch case 中文", r'\bcase\s*"(' + CJK + r')"\s*:'),
-    ("枚举属性中文值", r'\b(?:' + SENS_KEYS + r')\s*:\s*"(' + CJK + r')"'),
-    ("对象键被译成中文", r'(?:\{|,)\s*"(' + CJK + r')"\s*:'),
+    ("相等比较中的中文", rf'(?:(?:===|!==|==|!=)\s*{STR_CJK}|{STR_CJK}\s*(?:===|!==|==|!=))'),
+    ("switch case 中文", rf'\bcase\s*{STR_CJK}\s*:'),
+    ("枚举属性中文值", rf'\b(?:{SENS_KEYS})\s*:\s*{STR_CJK}'),
+    ("对象键被译成中文", rf'(?:\{{|,)\s*{STR_CJK}\s*:'),
 ]
+
+
+def scan_bundle(content):
+    """扫描 bundle 文本并返回 ([(类别名, Counter), ...], 总问题数)。"""
+    results = []
+    total_bad = 0
+    for label, pattern in CHECKS:
+        hits = collections.Counter()
+        for m in re.finditer(pattern, content):
+            frag = content[max(0, m.start() - 60):m.end() + 15].replace('\n', ' ')
+            hits[frag] += 1
+        total_bad += sum(hits.values())
+        results.append((label, hits))
+    return results, total_bad
 
 
 def main():
@@ -40,14 +57,9 @@ def main():
     print(f"校验文件: {path}")
     print(f"文件大小: {len(content)} 字符\n")
 
-    total_bad = 0
-    for label, pattern in CHECKS:
-        hits = collections.Counter()
-        for m in re.finditer(pattern, content):
-            frag = content[max(0, m.start() - 60):m.end() + 15].replace('\n', ' ')
-            hits[frag] += 1
+    results, total_bad = scan_bundle(content)
+    for label, hits in results:
         total = sum(hits.values())
-        total_bad += total
         status = "OK" if total == 0 else "发现问题"
         print(f"[{status}] {label}: {total} 处")
         for frag, n in hits.most_common(8):

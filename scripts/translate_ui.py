@@ -42,6 +42,8 @@ _PROTECT_KEYS = (
 
 _STR_D = r'"[^"\\\n;]{0,120}"'
 _STR_S = r"'[^'\\\n;]{0,120}'"
+_JS_STR_D = r'"(?:[^"\\\n]|\\.){0,120}"'
+_JS_STR_S = r"'(?:[^'\\\n]|\\.){0,120}'"
 _STR_ITEM = r'\s*(?:"[^"\\\n]{0,80}"|\x00CHMPROTECT\d+\x00)\s*'
 
 # 整块保护规则（优先执行，不依赖压缩变量名）
@@ -52,13 +54,23 @@ BLOCK_PROTECT_PATTERNS = [
     (r'\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*\.\s*(?:includes|indexOf)\s*\(', "成员判断数组"),
     # 3) Set 集合：new Set(["a","b",...])
     (r'new\s*Set\s*\(\s*\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*\)', "Set集合"),
-    # 4) 路由与分类列表数组：x=["Tab","Editor"]、x=["App","Jetski Chat",...]、["Code Search","Conversations","Commands"]
-    (r'\b[\w$]+\s*=\s*\[\s*"(?:App|Tab|General)"\s*(?:,' + _STR_ITEM + r')*\]', "路由列表数组"),
-    (r'\[\s*"(?:Code Search|Conversations)"\s*(?:,' + _STR_ITEM + r')+\]', "搜索分类数组"),
-    # 5) 分号分隔路由串："General;...;Developer".split(";")
-    (r'"[^"\\\n]{0,400}"(?=\s*\.split\s*\(\s*";"\s*\))', "分号路由串"),
+    # 4) 路由、状态、Hook 事件与分类列表数组
+    (r'\b[\w$]+\s*=\s*\[\s*"(?:App|Tab|General|Projects|Account|needsAttention|PreToolUse)"\s*(?:,' + _STR_ITEM + r')*\]', "路由列表数组"),
+    (r'\[\s*"(?:Code Search|Conversations|PreToolUse|needsAttention)"\s*(?:,' + _STR_ITEM + r')+\]', "搜索分类数组"),
+    # 5) 分号或空格分隔的路由/设置/属性串："General;...;Developer".split(";") 或 "General Appearance ...".split(" ")
+    (r'"[^"\\\n]{0,400}"(?=\s*\.split\s*\(\s*"[; ]"\s*\))', "分号/空格路由串"),
     # 6) Monaco 键盘码映射表行：[1,82,"Delete",20,"Delete",46,"VK_DELETE","",""]
     (r'\[\s*1\s*,\s*\d+\s*,\s*"[^"]*"\s*,\s*\d+\s*,\s*"[^"]*"\s*,\s*\d+\s*,\s*"[^"]*"\s*,\s*"[^"]*"\s*,\s*"[^"]*"\s*\]', "键盘码映射表"),
+    # 7) 纯字符串 KV 的 new Map（如 Zab 键位别名映射）
+    (r'new\s*Map\s*\(\s*\[\s*(?:\[\s*' + _JS_STR_D + r'\s*,\s*' + _JS_STR_D + r'\s*\]\s*,?\s*)+\]\s*\)', "纯字符串KV Map"),
+    # 8) new URLSearchParams 二维参数数组
+    (r'new\s*URLSearchParams\s*\(\s*\[\s*(?:\[\s*' + _JS_STR_D + r'\s*,[^\]\n]{1,80}\]\s*,?\s*)+\]\s*\)', "URLSearchParams参数"),
+    # 9) Unicode General Category 分类表
+    (r'\[\s*"Cn"\s*,\s*"Lu"\s*,\s*"Ll"(?:\s*,\s*(?:"[^"\\\n]{1,10}"|null|\x00CHMPROTECT\d+\x00))+\s*\]', "Unicode分类表"),
+    # 10) Keymap {key,code,vk} 映射项（如 T9a）
+    (r'\[\s*' + _JS_STR_D + r'\s*,\s*\{\s*key\s*:\s*' + _JS_STR_D + r'\s*,\s*code\s*:\s*' + _JS_STR_D + r'\s*,\s*vk\s*:\s*\d+\s*\}\s*\]', "Keymap按键条目"),
+    # 11) 主题预设回退对象（如 H6b: {light:[...],dark:[...]}）
+    (r'\{\s*light\s*:\s*\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*,\s*dark\s*:\s*\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*\}', "主题预设回退对象"),
 ]
 
 PROTECT_PATTERNS = [
@@ -107,6 +119,12 @@ PROTECT_PATTERNS = [
     # 11) 项目设置 Redux Reducer 白名单数组
     (r'(\[\s*)("Project General")(?=\s*,)', "项目设置Reducer白名单"),
     (r'(,\s*)("Project Folders"|"Project Agent"|"Permissions")(?=\s*[\]\,])', "项目设置Reducer白名单项"),
+    # 12) 遥测 setting 字段、分组过滤默认数组、路由包含回退、内部类注册名及日志/异常消息
+    (r'([{,]\s*setting\s*:\s*)(' + _STR_D + r')', "遥测setting字段"),
+    (r'(hideBreakdownForGroups\s*(?::\s*[\w$]+\s*)?=\s*\[\s*)(' + _STR_D + r')', "分组过滤默认数组"),
+    (r'(\.includes\([\w$]+\)\s*\?\s*[\w$]+\s*:\s*)(' + _STR_D + r')', "路由包含回退值"),
+    (r'(\bG\(\s*"com\.google\.[^"]+"\s*,\s*)(' + _STR_D + r')', "内部类注册名"),
+    (r'(\b(?:console\.(?:error|warn|log|debug)|throw\s+(?:new\s+)?Error)\s*\(\s*)(' + _STR_D + r')', "日志/异常消息"),
 ]
 
 _PROTECT_TOKEN = "\u0000CHMPROTECT{0}\u0000"
@@ -172,7 +190,7 @@ def protect_code_positions(content):
                 placeholders[token] = m2.group(0)
                 stats[label] = stats.get(label, 0) + 1
                 return token
-            return re.sub(_STR_D + "|" + _STR_S, _lit, block)
+            return re.sub(_JS_STR_D + "|" + _JS_STR_S, _lit, block)
         return _sub
 
     for pattern, label in BLOCK_PROTECT_PATTERNS:
@@ -208,10 +226,19 @@ def protect_code_positions(content):
 
 
 def restore_protected(content, placeholders):
-    """还原被保护起来的代码字面量。"""
-    for token, original in placeholders.items():
-        content = content.replace(token, original)
+    """还原被保护起来的代码字面量（单次正则回填，避免 O(N^2) 全串复制）。"""
+    if not placeholders:
+        return content
+    pat = re.compile(r'\u0000CHMPROTECT\d+\u0000')
+    while pat.search(content):
+        next_content = pat.sub(lambda m: placeholders.get(m.group(0), m.group(0)), content)
+        if next_content == content:
+            break
+        content = next_content
     return content
+
+
+_ATTR_PREFIX_RE = re.compile(r'^(label|title|aria-label|text|placeholder|description|tooltip|layout|heading|subtitle|emptyText):(.*)$', re.S)
 
 
 def apply_string_translation(content, original, translated):
@@ -220,7 +247,31 @@ def apply_string_translation(content, original, translated):
     if literal_pattern.match(original) and literal_pattern.match(translated):
         return apply_safe_literal_replacement(content, original, translated)
 
-    # 2. 显式带有冒号或属性键的代码片段（例如 label:"New Conversation" 或 title:"Account"）
+    # 2A. 显式属性前缀词条（支持未加引号 label:"..." 与加引号 "aria-label":"..."，且强制非标识符前导边界防止匹配 subtitle:/sublabel:）
+    m_attr = _ATTR_PREFIX_RE.match(original)
+    if m_attr and translated.startswith(m_attr.group(1) + ":"):
+        attr_key, rest = m_attr.groups()
+        t_rest = translated[len(attr_key) + 1:]
+        candidates = [
+            (f"{attr_key}:{rest}", f"{attr_key}:{t_rest}"),
+            (f'"{attr_key}":{rest}', f'"{attr_key}":{t_rest}'),
+        ]
+        if rest.startswith('"') and rest.endswith('"') and t_rest.startswith('"') and t_rest.endswith('"'):
+            s_rest = to_single_quoted(rest[1:-1])
+            s_t_rest = to_single_quoted(t_rest[1:-1])
+            candidates.append((f"{attr_key}:{s_rest}", f"{attr_key}:{s_t_rest}"))
+            candidates.append((f"'{attr_key}':{s_rest}", f"'{attr_key}':{s_t_rest}"))
+        replaced = False
+        for src_c, dst_c in candidates:
+            if src_c not in content:
+                continue
+            pat = re.compile(r'(?<![\w$"\'])' + re.escape(src_c))
+            content, n = pat.subn(lambda _m, d=dst_c: d, content)
+            if n:
+                replaced = True
+        return content, replaced
+
+    # 2B. 复合冒号结构片段（例如 acceptAgentStep:{label:"Accept Step"} 或 title:"Shortcuts",description:"..."）
     if any(k in original for k in ['label:', 'title:', 'aria-label:', 'text:', 'placeholder:', 'description:', 'tooltip:']):
         if original in content:
             return content.replace(original, translated), True
@@ -269,11 +320,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input",
-        default=os.environ.get(
-            "AGY_UI_MAIN_SOURCE",
-            r"C:\Users\Administrator\.gemini\antigravity\brain\a12d81c7-05e0-4def-b7bc-6e8543fed692\scratch\ui_main.js",
-        ),
-        help="Path to the extracted Antigravity UI main bundle.",
+        default=os.environ.get("AGY_UI_MAIN_SOURCE", ""),
+        help="Path to the extracted Antigravity UI main bundle (or set AGY_UI_MAIN_SOURCE).",
     )
     parser.add_argument(
         "--output",
@@ -302,6 +350,9 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     output_file = output_override or os.path.join(output_dir, "zh_cn_ui_main.js")
     
+    if not input_file:
+        print("Error: No input bundle specified. Pass --input <path> or set AGY_UI_MAIN_SOURCE (or use scripts/rebuild_ui.py).")
+        sys.exit(2)
     if not os.path.exists(input_file):
         print(f"Error: Input file {input_file} not found.")
         sys.exit(1)
@@ -328,7 +379,6 @@ def main():
         "Agent Market Search Results": "智能体市场搜索结果",
         "Agent can": "智能体可以",
         "Agent can run": "智能体可运行",
-        "Agents": "智能体列表",
         "All Files": "全部文件",
         "All tools (*)": "全部工具 (*)",
         "Alt text:": "替代文本：",
@@ -366,7 +416,6 @@ def main():
         "Collapse": "折叠",
         "Collapse All": "全部折叠",
         "Command Palette": "命令面板",
-        "Commands": "命令列表",
         "Confirm": "确认",
         "Connect": "连接",
         "Connected": "已连接",
@@ -380,18 +429,13 @@ def main():
         "Create Workspace": "创建工作区",
         "Created": "已创建",
         "Custom": "自定义",
-        "Cut": "剪切",
         "Dark": "深色模式",
-        "Default": "默认",
-        "Delete": "删除",
         "Delete conversation": "删除会话",
         "Delete project": "删除项目",
         "Details": "详情",
-        "Discard": "放弃更改",
         "Disconnect": "断开连接",
         "Dismiss": "忽略",
         "Display Options": "显示选项",
-        "Done": "完成",
         "Download": "下载",
         "Duplicate": "创建副本",
         "Edit": "编辑",
@@ -405,8 +449,6 @@ def main():
         "Feedback": "意见反馈",
         "Filter": "筛选",
         "Finish": "完成",
-        "Folders": "文件夹列表",
-        "General": "常规",
         "Good response": "回答不错",
         "Bad response": "回答不佳",
         "Help": "帮助与支持",
@@ -422,7 +464,6 @@ def main():
         "Load older messages": "加载更早消息",
         "Loading...": "正在加载...",
         "Manage": "管理",
-        "Models": "模型",
         "More": "更多",
         "More actions": "更多操作",
         "More options": "更多选项",
@@ -434,20 +475,13 @@ def main():
         "New Project": "新建项目",
         "New Workspace": "新建工作区",
         "Next": "下一步",
-        "No": "否",
-        "None": "无",
-        "Notifications": "通知中心",
         "OK": "确定",
-        "Open": "打开",
         "Open Folder": "打开文件夹",
         "Open IDE": "打开 IDE",
         "Open Settings": "打开设置",
         "Open in Browser": "在浏览器中打开",
         "Options": "选项",
         "Overview": "概览",
-        "Paste": "粘贴",
-        "Pause": "暂停",
-        "Permissions": "权限管理",
         "Pin": "固定",
         "Pinned": "已固定",
         "Plugins": "插件扩展",
@@ -455,7 +489,6 @@ def main():
         "Preview": "预览",
         "Project": "项目",
         "Project options": "项目选项",
-        "Projects": "项目列表",
         "Prompt": "提示词",
         "Recent": "最近使用",
         "Recently Used": "最近使用",
@@ -470,8 +503,6 @@ def main():
         "Restore": "恢复",
         "Resume": "继续",
         "Retry": "重试",
-        "Running": "正在运行",
-        "Save": "保存",
         "Save Changes": "保存更改",
         "Save as...": "另存为...",
         "Search": "搜索",
@@ -480,8 +511,6 @@ def main():
         "Select All": "全选",
         "Select model": "选择模型",
         "Send": "发送",
-        "Settings": "设置",
-        "Shortcuts": "快捷键设置",
         "Show": "显示",
         "Sidebar": "侧边栏",
         "Sign in": "登录",
@@ -489,11 +518,9 @@ def main():
         "Skip": "跳过",
         "Start": "开始",
         "Status": "状态",
-        "Stop": "停止",
         "Success": "成功",
         "Sync": "同步",
         "Terminal": "终端",
-        "Theme": "外观主题",
         "Timed": "定时触发",
         "Tools": "工具箱",
         "Typeahead menu": "智能联想菜单",
@@ -510,7 +537,6 @@ def main():
         "View": "查看",
         "Warning": "警告",
         "Workspace": "工作区",
-        "Workspaces": "工作区列表",
         "Yes": "是",
         "Zoom In": "放大",
         "Zoom Out": "缩小",
@@ -776,7 +802,6 @@ def main():
         "Agent Settings (For Project)": "智能体现有项目专属配置",
         "Agent Security Settings": "智能体安全策略与权限配置",
         "Skills and Rules Settings": "技能与提示词规则设置",
-        "Theme": "颜色主题",
         "Light Theme": "浅色主题配色",
         "Dark Theme": "深色主题配色",
         "Inherit Editor": "跟随宿主编辑器主题",
@@ -852,7 +877,6 @@ def main():
         "New Agent Script": "新建智能体脚本",
         "Agent options": "智能体选项",
         "Agent Script Command Configuration": "智能体脚本命令配置",
-        "Command": "命令模式",
         "Python Script": "Python 脚本",
         "Python Coming Soon": "Python 脚本即将上线",
         "Command Spec (JSON) ": "命令执行规范 (JSON) ",
@@ -912,7 +936,6 @@ def main():
         "MCP Servers Disabled": "MCP 服务器已禁用",
         "No MCP servers found for ": "未找到匹配的 MCP 服务器: ",
         "No MCP servers installed": "未安装任何 MCP 服务器",
-        "Account": "账户信息",
         "System": "跟随系统外观",
         "Light": "浅色模式 (Light)",
         "Dark": "深色模式 (Dark)",
@@ -942,7 +965,6 @@ def main():
         "Proceed in Sandbox": "在沙箱中直接执行",
         "Require Review": "需要人工评审",
         "Always Ask": "每次均请求确认",
-        "Allow": "允许执行",
         "Plan Review Policy": "规划审查策略",
         "Artifact Review Policy": "富交互产物评审策略",
         "Whether the agent asks you to review its documents.": "智能体是否就其生成的文档向您请求评审。",
@@ -1211,7 +1233,6 @@ def main():
         "URLs the agent can actuate on in this workspace.": "智能体可在当前工作区中交互执行操作的 URL 目标列表。",
         "Outside of Folders File Access Policy": "工作区文件夹外文件访问策略",
         "Configure GitHub access policies.": "配置 GitHub 平台访问安全策略。",
-        "Settings": "系统设置",
         "Terminal": "终端",
         "Security": "安全",
         "Advanced": "高级选项",
@@ -1713,7 +1734,6 @@ def main():
         "Tab to Import": "按 Tab 键自动导入缺失依赖包",
         "Switch IDE workspace": "切换 IDE 工作区",
         "Suggestions in Editor": "编辑器行内智能补全建议",
-        "System Prompt": "系统提示词",
         "Step Preview": "步骤预览",
         "Task Logs": "任务日志",
         "Task Log": "任务日志",
@@ -1820,15 +1840,10 @@ def main():
         "\"New Conversation\"": "\"新建对话\"",
         "\"Scheduled Tasks\"": "\"计划任务\"",
         "\"Conversation History\"": "\"历史对话\"",
-        "\"Projects\"": "\"项目\"",
         "\"No conversations yet\"": "\"暂无历史对话\"",
-        "\"Settings\"": "\"设置\"",
         "\"Ask anything, @ to mention\"": "\"问任何问题，输入 @ 提及\"",
         "\", / for actions\"": "\"，输入 / 执行操作\"",
         "aria-label:\"Message input\"": "aria-label:\"消息输入框\"",
-        "\"Project General\"": "\"项目常规\"",
-        "\"Project Folders\"": "\"项目文件夹\"",
-        "\"Project Agent\"": "\"项目智能体\"",
         "title:\"Account\"": "title:\"账户\"",
         "label:\"Account\"": "label:\"账户\"",
         "title:\"Google Drive\"": "title:\"谷歌云端硬盘\"",
@@ -1881,7 +1896,6 @@ def main():
         "\"File Picker\"": "\"文件选择器\"",
         "\"Select Previous Conversation\"": "\"选择上一个对话\"",
         "\"Select Next Conversation\"": "\"选择下一个对话\"",
-        "\"CONVERSATION\"": "\"对话\"",
         "\"LAYOUT CONTROLS\"": "\"布局控制\"",
         "\"Toggle Model Selector\"": "\"切换模型选择器\"",
         "\"Toggle Voice Recording\"": "\"切换语音录制\"",
@@ -1893,20 +1907,15 @@ def main():
         "\"Your Plan:\"": "\"当前套餐：\"",
         "\"Upgrade\"": "\"升级\"",
         "\"Sign Out\"": "\"退出登录\"",
-        "\"Email\"": "\"邮箱\"",
         "\"Terms of Service\"": "\"服务条款\"",
         "title:\"Projects\"": "title:\"项目\"",
         "label:\"Projects\"": "label:\"项目\"",
         "title:\"Conversations\"": "title:\"对话\"",
         "label:\"Conversations\"": "label:\"对话\"",
-        "\"Not in Project\"": "\"未归属项目\"",
-        "\"Workspaces\"": "\"工作区\"",
         "\"Show all\"": "\"显示全部\"",
-        "\"Theme\"": "\"主题\"",
         "\"No project selected or project management not available.\"": "\"未选择项目，或项目管理不可用。\"",
         "\"Open Settings\"": "\"打开设置\"",
         "\"No agents running\"": "\"当前没有运行中的智能体\"",
-        "\"Folders\"": "\"文件夹\"",
         "\"Add Folder\"": "\"添加文件夹\"",
         "\"Agent Settings\"": "\"智能体设置\"",
         "\"Security Preset\"": "\"安全预设\"",
@@ -1921,7 +1930,6 @@ def main():
         "\"Always Ask\"": "\"始终询问\"",
         "\"Require Review\"": "\"需要评审\"",
         "\"Custom\"": "\"自定义\"",
-        "\"Allow\"": "\"允许\"",
         "\"Specifies Agent's behavior when asking for review on artifacts, which are rich documents created by the agent to provide a better conversational experience.\"": "\"指定智能体在请求评审产物时的行为。产物是它为提供更丰富对话体验而创建的文档。\"",
         "\"Enable AI Credit Overages\"": "\"启用 AI 额度超支\"",
         "\"When toggled on, Antigravity will use your AI credits to fulfill model requests once you're out of model quota. Antigravity will always use your model quota first before using AI credits.\"": "\"开启后，当模型配额耗尽时，Antigravity 将使用您的 AI 额度处理模型请求。Antigravity 将始终优先使用模型配额。\"",
@@ -1951,7 +1959,6 @@ def main():
         "\"user_global\"": "\"用户全局\"",
         "\"Suggestions\"": "\"建议\"",
         "\"Navigation\"": "\"导航\"",
-        "\"Context\"": "\"上下文\"",
         "\"Advanced\"": "\"高级\"",
         "\"Quota\"": "\"配额\"",
         "\"Default Customizations\"": "\"默认自定义\"",
@@ -2084,10 +2091,7 @@ def main():
         "\"Quit\"": "\"退出\"",
         "\"Approve\"": "\"批准\"",
         "\"Reject\"": "\"拒绝\"",
-        "\"Deny\"": "\"拒绝\"",
         "\"Completed\"": "\"已完成\"",
-        "\"running\"": "\"运行中\"",
-        "\"Running\"": "\"运行中\"",
         "\"completed\"": "\"已完成\"",
         "\"Approved\"": "\"已批准\"",
         "\"Requested change\"": "\"请求变更\"",
@@ -2450,7 +2454,6 @@ def main():
         "when not in a project": "在非项目环境中",
         "in this project": "在此项目中",
         "in this workspace": "在此工作区中",
-        "Not in Project": "非项目专属",
         "Standalone Conversations": "独立会话列表",
         "Standalone": "独立模式",
         "Paths the agent can read": "智能体被允许读取的文件路径",
@@ -2460,8 +2463,6 @@ def main():
         "Select Model to Send Message": "请选择用于发送消息的模型",
         "Select a model using the model selector in the input box": "请在输入框的模型选择器中指定一个模型",
         "Select workspace, current:": "选择工作区，当前为：",
-        "Workspaces": "工作区列表",
-        "Projects": "项目列表",
         "Show All": "展开全部",
         "Show Less": "收起折叠",
         "High Contrast": "高对比度",
@@ -3087,7 +3088,6 @@ def main():
     "No keyboard shortcuts found matching your filter.": "未找到匹配当前筛选条件的键盘快捷键。",
     "Cancel recording": "取消录制",
     "Press keys...": "请按下组合按键...",
-    "Middle Click": "鼠标中键单击",
     "Layout Controls": "界面布局控制",
     "label:Accept Step": "接受此步骤",
     "label:Reject Step": "拒绝此步骤",
@@ -3466,10 +3466,14 @@ def main():
         "description:\"Simulate a different user cohort (Google, External, Enterprise).\"": "description:\"模拟不同的用户身份类型（Google 内部、外部开发者、企业团队）。\"",
         "label:\"Override feature environment\"": "label:\"覆盖功能运行环境\"",
         "description:\"When enabled, the values below replace the auto-detected OS, host, and user type used for feature gating.\"": "description:\"启用后，下方设置的数值将替代自动检测的操作系统、宿主与用户集群，用于功能权限判定。\"",
-        "Project General": "项目常规设置",
-        "Project Folders": "项目文件夹配置",
-        "Project Agent": "项目智能体配置",
-        "Project 4K": "项目 4K 高分屏优化",
+        "label:\"Email\"": "label:\"邮箱\"",
+        "title:\"Project 4K\"": "title:\"项目 4K 增强模式\"",
+        "label:\"Stop\"": "label:\"停止\"",
+        "tooltip:\"Stop\"": "tooltip:\"停止\"",
+        "label:\"Default\"": "label:\"默认\"",
+        "title:\"Default\"": "title:\"默认\"",
+        "label:\"Allow\"": "label:\"允许\"",
+        "label:\"Deny\"": "label:\"拒绝\"",
         "label:\"This Computer\"": "label:\"本机环境\"",
         "label:\"Remote\"": "label:\"远程环境\"",
         "title:\"Tool Permissions\"": "title:\"工具调用权限\"",
@@ -3846,6 +3850,513 @@ def main():
         "reopenClosedAuxTab:{label:\"Reopen Closed Tab\"}": "reopenClosedAuxTab:{label:\"重新打开已关闭标签页\"}",
         "openCommandPalette:{label:\"File Picker\"}": "openCommandPalette:{label:\"文件选择器\"}",
         "openCommandPaletteWithPrefix:{label:\"Open Command Palette\"}": "openCommandPaletteWithPrefix:{label:\"打开命令面板\"}",
+        # --- 2.32.2 Domain A: 设置、账号、环境、连接器与浏览器设置 ---
+        "label:\"Enter to Send\"": "label:\"按 Enter 发送\"",
+        "description:\"Send messages with the keyboard's Enter key instead of starting a new line.\"": "description:\"使用键盘 Enter 键发送消息，而不是换行。\"",
+        "label:\"Conversation Steps\"": "label:\"对话步骤详情\"",
+        "description:\"Choose how much detail is shown during a conversation.\"": "description:\"选择在对话过程中展示多少细节步骤。\"",
+        "label:\"Context and Quota Indicator\"": "label:\"上下文与配额指示器\"",
+        "description:\"Show how full the context window is next to the send button. Click it for a breakdown and to see your model quota.\"": "description:\"在发送按钮旁显示上下文窗口使用占比，点击可查看明细与模型配额。\"",
+        "label:\"Prevent Sleep\"": "label:\"阻止系统休眠\"",
+        "description:\"Prevent the computer from sleeping while the app is running.\"": "description:\"在应用运行期间阻止电脑进入休眠状态。\"",
+        "label:\"Nickname\"": "label:\"设备昵称\"",
+        "label:\"Default Cog Repository\"": "label:\"默认 Cog 仓库\"",
+        "description:\"Git-on-Borg repository used when creating a new Cog workspace from your initial prompt (e.g., chromium/src or android/platform/superproject).\"": "description:\"基于初始提示词创建新 Cog 工作区时使用的 Git-on-Borg 仓库（如 chromium/src）。\"",
+        "label:\"Default Cog Branch / Ref\"": "label:\"默认 Cog 分支 / Ref\"",
+        "description:\"Optional branch or ref used when creating a new Cog workspace (defaults to main if unset).\"": "description:\"创建新 Cog 工作区时使用的可选分支或 Ref（未设置时默认为 main）。\"",
+        "placeholder:\"e.g., chromium/src\"": "placeholder:\"例如：chromium/src\"",
+        "placeholder:\"e.g., main or refs/heads/main\"": "placeholder:\"例如：main 或 refs/heads/main\"",
+        "label:\"United States\"": "label:\"美国\"",
+        "label:\"Europe\"": "label:\"欧洲\"",
+        "aria-label:\"Toggle Google Cloud projects\"": "aria-label:\"切换 Google Cloud 项目\"",
+        "aria-label:\"Billing model\"": "aria-label:\"计费模式\"",
+        "title:\"Subscription\"": "title:\"订阅制\"",
+        "title:\"Pay As You Go\"": "title:\"按量付费\"",
+        "aria-label:\"Available licenses\"": "aria-label:\"可用许可证\"",
+        "title:\"Select your license\"": "title:\"选择您的许可证\"",
+        "description:\"Permanently delete your remote conversations, projects, scheduled tasks, connected plugins and settings. Data in the desktop app and your Google account are not affected.\"": "description:\"永久删除您的远程会话、项目、定时任务、已连接插件和设置。桌面应用和 Google 账号中的数据不受影响。\"",
+        "label:\"Google One Referral\"": "label:\"Google One 推荐奖励\"",
+        "description:\"Share your referral link with friends\"": "description:\"向好友分享您的推荐链接\"",
+        "aria-label:\"Show Remote Control QR code\"": "aria-label:\"显示远程控制二维码\"",
+        "placeholder:\"e.g., example.com\"": "placeholder:\"例如：example.com\"",
+        "label:\"Download Location\"": "label:\"下载保存位置\"",
+        "label:\"Browsing History\"": "label:\"浏览历史记录\"",
+        "label:\"No matching flags\"": "label:\"无匹配的实验标志\"",
+        "label:\"Sign in again\"": "label:\"重新登录\"",
+        "label:\"Custom\\\\u2026\"": "label:\"自定义…\"",
+        "label:\"Workspace URI query parameter\"": "label:\"工作区 URI 查询参数\"",
+        "placeholder:\"Select or enter a workspace URI\"": "placeholder:\"选择或输入工作区 URI\"",
+        "aria-label:\"Workspace URI to switch to\"": "aria-label:\"要切换的工作区 URI\"",
+        "description:\"Developer-only tools. These settings do not affect other users.\"": "description:\"仅限开发者使用的工具，这些设置不会影响其他用户。\"",
+        "placeholder:\"Please list the steps to reproduce the issue\"": "placeholder:\"请列出复现该问题的步骤\"",
+        "label:\"Send feedback as \"": "label:\"以此身份发送反馈：\"",
+        "aria-label:\"Chime volume\"": "aria-label:\"提示音音量\"",
+        "title:\"Sound\"": "title:\"声音与语音\"",
+        "description:\"Enter always submits. This adds a second shortcut.\"": "description:\"Enter 键始终提交发送，此处可添加第二个备用快捷键。\"",
+        "label:\"Pin / Unpin Conversation\"": "label:\"固定 / 取消固定对话\"",
+        "aria-label:\"Voices\"": "aria-label:\"语音音色\"",
+        "label:\"Voice\"": "label:\"语音\"",
+        "label:\"Microphone\"": "label:\"麦克风\"",
+        "description:\"Input device for voice mode and dictation.\"": "description:\"用于语音模式和语音输入的麦克风设备。\"",
+        "label:\"Save audio recordings\"": "label:\"保存音频录制\"",
+        "description:\"Only stored on your machine.\"": "description:\"仅保存在您的本地设备上。\"",
+        "label:\"Recordings\"": "label:\"录音记录\"",
+        "title:\"Delete all recordings?\"": "title:\"确定删除所有录音吗？\"",
+        "aria-label:\"Voice volume\"": "aria-label:\"语音音量\"",
+        "aria-label:\"Voice speed\"": "aria-label:\"语速\"",
+        "aria-label:\"Dismiss microphone warning\"": "aria-label:\"关闭麦克风警告\"",
+        "aria-label:\"Interface Layout\"": "aria-label:\"界面布局\"",
+        "title:\"Interface Layout\"": "title:\"界面布局\"",
+        "title:\"Workspaces\"": "title:\"工作区\"",
+        "title:\"Chat\"": "title:\"对话\"",
+        "title:\"Chat Layout\"": "title:\"对话布局\"",
+        "title:\"Accessibility\"": "title:\"无障碍辅助\"",
+        "title:\"Chat Input\"": "title:\"对话输入\"",
+        "title:\"Embedded web preview\"": "title:\"内嵌网页预览\"",
+        "title:\"Cookies and site data\"": "title:\"Cookie 与网站数据\"",
+        "title:\"Downloads\"": "title:\"下载内容\"",
+        "aria-label:\"Close downloads\"": "aria-label:\"关闭下载面板\"",
+        "title:\"Cancel download\"": "title:\"取消下载\"",
+        "title:\"Remove from list\"": "title:\"从列表中移除\"",
+        "aria-label:\"Address bar\"": "aria-label:\"地址栏\"",
+        "aria-label:\"Address bar suggestions\"": "aria-label:\"地址栏建议\"",
+        "placeholder:\"Enter a URL (e.g. http://localhost:8080)\"": "placeholder:\"输入网址（例如 http://localhost:8080）\"",
+        "aria-label:\"Remove from history\"": "aria-label:\"从历史记录中移除\"",
+        "title:\"Remove from history (Shift+Delete)\"": "title:\"从历史记录中移除 (Shift+Delete)\"",
+        "aria-label:\"Forward\"": "aria-label:\"前进\"",
+        "title:\"Forward\"": "title:\"前进\"",
+        "label:\"Forward\"": "label:\"前进\"",
+        "aria-label:\"Open in external browser\"": "aria-label:\"在外部浏览器中打开\"",
+        "title:\"Open in external browser\"": "title:\"在外部浏览器中打开\"",
+        "aria-label:\"Open search in external browser\"": "aria-label:\"在外部浏览器中打开搜索\"",
+        "aria-label:\"Deny setting up browser\"": "aria-label:\"拒绝配置浏览器\"",
+        "aria-label:\"Open Browser Setup\"": "aria-label:\"打开浏览器配置\"",
+        "aria-label:\"Confirm Browser Interaction\"": "aria-label:\"确认浏览器交互\"",
+        "aria-label:\"Browser steps\"": "aria-label:\"浏览器操作步骤\"",
+        "label:\"Browser Use\"": "label:\"浏览器控制\"",
+        "label:\"Browser actions\"": "label:\"浏览器操作\"",
+        "label:\"Browser downloads\"": "label:\"浏览器下载\"",
+        "title:\"Capture Screenshot\"": "title:\"截取屏幕截图\"",
+        "title:\"Mention Page\"": "title:\"提及当前网页\"",
+        "title:\"This site can\\\\u2019t be reached\"": "title:\"无法访问此网站\"",
+        "title:\"This page isn\\\\u2019t working\"": "title:\"此网页无法正常运作\"",
+        "description:\"You should not enter any sensitive information on this site (for example, passwords or credit cards), because it could be stolen by attackers.\"": "description:\"请勿在此网站上输入任何敏感信息（例如密码或信用卡号），因为这些信息可能会被攻击者窃取。\"",
+        "description:\"Attackers might be able to see the images you're looking at on this site and trick you by modifying them.\"": "description:\"攻击者可能会看到您在此网站上查看的图片，并通过篡改图片进行欺骗。\"",
+        "title:\"Connectors\"": "title:\"连接器 (Connectors)\"",
+        "label:\"Connectors\"": "label:\"连接器\"",
+        "placeholder:\"Search connectors\"": "placeholder:\"搜索连接器\"",
+        "aria-label:\"Search connectors\"": "aria-label:\"搜索连接器\"",
+        "label:\"Announcements and tips\"": "label:\"公告与使用技巧\"",
+        "aria-label:\"Dismiss tip\"": "aria-label:\"关闭提示\"",
+        "aria-label:\"Dismiss Tip\"": "aria-label:\"关闭提示\"",
+        "aria-label:\"Dismiss service announcement\"": "aria-label:\"关闭服务公告\"",
+        "title:\"Dismiss service announcement\"": "title:\"关闭服务公告\"",
+        "aria-label:\"Dismiss suggestion\"": "aria-label:\"忽略建议\"",
+        "aria-label:\"Click to open docs\"": "aria-label:\"点击打开文档\"",
+        "aria-label:\"Reload app\"": "aria-label:\"重新加载应用\"",
+        "aria-label:\"Back to home\"": "aria-label:\"返回首页\"",
+        "aria-label:\"Toggle Side Panel\"": "aria-label:\"切换侧边面板\"",
+        "aria-label:\"Show or Hide Extensions\"": "aria-label:\"显示或隐藏扩展\"",
+        "title:\"Extensions\"": "title:\"扩展\"",
+        "label:\"Extensions\"": "label:\"扩展\"",
+        "title:\"Agents\"": "title:\"智能体\"",
+        "title:\"Agent\"": "title:\"智能体\"",
+        "label:\"Agent\"": "label:\"智能体\"",
+        "title:\"Context Providers\"": "title:\"上下文提供程序\"",
+        "title:\"Themes\"": "title:\"主题\"",
+        "title:\"Settings\"": "title:\"设置\"",
+        "label:\"Settings\"": "label:\"设置\"",
+        "aria-label:\"Settings\"": "aria-label:\"设置\"",
+        "tooltip:\"Settings\"": "tooltip:\"设置\"",
+        "title:\"More cloud environments\"": "title:\"更多云端环境\"",
+        "label:\"CitC Workspace\"": "label:\"CitC 工作区\"",
+        "label:\"Cog Workspace\"": "label:\"Cog 工作区\"",
+        "label:\"ABFS Workspace (Alpha)\"": "label:\"ABFS 工作区 (Alpha)\"",
+        "label:\"CitC Workspace Type\"": "label:\"CitC 工作区类型\"",
+        "label:\"Developer: Reset Onboarding\"": "label:\"开发者：重置新手引导\"",
+        "label:\"Developer: Reset NUX\"": "label:\"开发者：重置新手体验 (NUX)\"",
+        "title:\"Continue with Google\"": "title:\"使用 Google 账号继续\"",
+        "title:\"Continue with Google Cloud\"": "title:\"使用 Google Cloud 账号继续\"",
+        "placeholder:\"Paste authorization code\"": "placeholder:\"粘贴授权码\"",
+        "title:\"Build new features\"": "title:\"构建新功能\"",
+        "description:\"Hand off a feature and come back to working code.\"": "description:\"将功能需求交给智能体，回来即可收获可运行代码。\"",
+        "title:\"Debug and fix\"": "title:\"调试与修复\"",
+        "title:\"Research anything\"": "title:\"深度调研任意主题\"",
+        "title:\"Write and edit docs\"": "title:\"撰写与编辑文档\"",
+        "description:\"Draft documents, emails, and notes that sound like you.\"": "description:\"起草贴合您个人风格的文档、邮件与笔记。\"",
+        "title:\"Getting started with Google Antigravity\"": "title:\"Google Antigravity 入门指南\"",
+        "title:\"Optimized for you\"": "title:\"为您量身优化\"",
+        "title:\"Built to help, not hurt\"": "title:\"助您提效，安全可控\"",
+        "title:\"You are in control\"": "title:\"一切尽在您的掌控\"",
+        "title:\"Stay up to date.\"": "title:\"保持版本最新\"",
+        "title:\"Switch Roles\"": "title:\"切换角色\"",
+        "tooltip:\"Create a Plugin with the Agent\"": "tooltip:\"通过智能体创建插件\"",
+        "aria-label:\"Create plugin\"": "aria-label:\"创建插件\"",
+        "label:\"Loading installed plugins...\"": "label:\"正在加载已安装插件...\"",
+        "description:\"Explore other marketplace customizations\"": "description:\"探索市场中的其他自定义扩展\"",
+        "aria-label:\"More Plugins\"": "aria-label:\"更多插件\"",
+        "label:\"Marketplace\"": "label:\"扩展市场\"",
+        "aria-label:\"Marketplace notice\"": "aria-label:\"市场提示\"",
+        "aria-label:\"Plugin details\"": "aria-label:\"插件详情\"",
+        "title:\"MCP server error\"": "title:\"MCP 服务器错误\"",
+        "label:\"View MCP servers\"": "label:\"查看 MCP 服务器\"",
+        "label:\"Built In\"": "label:\"内置\"",
+        "label:\"Runs remotely\"": "label:\"远程运行\"",
+        "label:\"Runs on this computer\"": "label:\"在本机运行\"",
+        "title:\"Skills & Rules\"": "title:\"技能与规则\"",
+        "title:\"Delete Skill\"": "title:\"删除技能\"",
+        "title:\"Daily environment time used\"": "title:\"今日环境使用时长\"",
+        "title:\"Too many environments running\"": "title:\"运行中的环境过多\"",
+        "title:\"Plan upgrade required\"": "title:\"需要升级套餐\"",
+        "title:\"Daily conversation limit reached\"": "title:\"已达到每日对话上限\"",
+        "title:\"Conversation limit reached\"": "title:\"已达到对话上限\"",
+        "title:\"Remote agents are busy\"": "title:\"远程智能体正忙\"",
+        "title:\"Could not create project\"": "title:\"无法创建项目\"",
+        "title:\"Failed to create remote project\"": "title:\"创建远程项目失败\"",
+        "title:\"Failed to unarchive local project\"": "title:\"取消归档本地项目失败\"",
+        "title:\"Failed to clone project locally\"": "title:\"本地克隆项目失败\"",
+        "title:\"Failed to create CitC clone workspace\"": "title:\"创建 CitC 克隆工作区失败\"",
+        "title:\"Error Loading Models\"": "title:\"加载模型出错\"",
+        "label:\"Try again\"": "label:\"重试\"",
+        "title:\"Account connection was not completed.\"": "title:\"账号连接未完成。\"",
+        "title:\"Not signed in\"": "title:\"未登录\"",
+        "title:\"Sign-in required\"": "title:\"需要登录\"",
+        "label:\"Unauthenticated\"": "label:\"未验证\"",
+        "label:\"Ready\"": "label:\"就绪\"",
+        "title:\"Ready\"": "title:\"就绪\"",
+        "title:\"Pending\"": "title:\"等待中\"",
+        "title:\"Error\"": "title:\"错误\"",
+        "label:\"Error\"": "label:\"错误\"",
+        "label:\"Starting\"": "label:\"正在启动\"",
+        "label:\"Stopped\"": "label:\"已停止\"",
+        "label:\"Backoff\"": "label:\"退避重试中\"",
+        "label:\"Online\"": "label:\"在线\"",
+        "label:\"Offline\"": "label:\"离线\"",
+        # --- 2.32.2 Domain B: 智能体团队、协调器、Best-of-N、评论批注、侧边提问与 Hooks ---
+        "title:\"Coordinators\"": "title:\"协调器 (Coordinators)\"",
+        "label:\"No coordinators\"": "label:\"暂无协调器\"",
+        "title:\"New Coordinator\"": "title:\"新建协调器\"",
+        "aria-label:\"New coordinator\"": "aria-label:\"新建协调器\"",
+        "placeholder:\"e.g. Release helper\"": "placeholder:\"例如：版本发布助手\"",
+        "aria-label:\"Coordinator name\"": "aria-label:\"协调器名称\"",
+        "placeholder:\"What should this coordinator accomplish?\"": "placeholder:\"这个协调器应该完成什么目标？\"",
+        "aria-label:\"Coordinator goal\"": "aria-label:\"协调器目标\"",
+        "title:\"Coordinator settings\"": "title:\"协调器设置\"",
+        "tooltip:\"Coordinator settings\"": "tooltip:\"协调器设置\"",
+        "title:\"Custom Agent Error:\"": "title:\"自定义智能体错误：\"",
+        "label:\"Custom Order\"": "label:\"自定义排序\"",
+        "label:\"Last Updated\"": "label:\"最近更新\"",
+        "label:\"Last Prompt\"": "label:\"最近提示词\"",
+        "label:\"Sort By\"": "label:\"排序方式\"",
+        "title:\"Group By\"": "title:\"分组方式\"",
+        "title:\"Display\"": "title:\"显示设置\"",
+        "label:\"Complete Onboarding Step\"": "label:\"完成引导步骤\"",
+        "label:\"Starting the conversation\\\\u2026\"": "label:\"正在启动对话…\"",
+        "label:\"Resolving link\\\\u2026\"": "label:\"正在解析链接…\"",
+        "label:\"Best-of-N Started\"": "label:\"Best-of-N 已开始\"",
+        "label:\"Best-of-N Ended\"": "label:\"Best-of-N 已结束\"",
+        "title:\"Failed to start Best of N mode\"": "title:\"启动 Best of N 模式失败\"",
+        "label:\"Too many surveys\"": "label:\"问卷触发过于频繁\"",
+        "title:\"The current trigger rate is too high.\"": "title:\"当前触发频率过高。\"",
+        "label:\"Prompt too simple\"": "label:\"提示词过于简单\"",
+        "title:\"This prompt is straightforward and does not need alternative comparisons.\"": "title:\"此提示词足够明确，无需进行多方案对比。\"",
+        "label:\"Not suitable for Best-of-N\"": "label:\"不适合 Best-of-N 模式\"",
+        "title:\"This request is not well-suited for parallel Best-of-N generation.\"": "title:\"此请求不太适合并行多模型对比生成。\"",
+        "label:\"In a rush\"": "label:\"赶时间\"",
+        "title:\"I prefer an immediate single response to prioritize productivity right now.\"": "title:\"我更希望立即获得单模型回复，以优先保障当前效率。\"",
+        "title:\"Why are you opting out of auto-triggered Best-of-N?\"": "title:\"为什么选择退出自动触发的 Best-of-N？\"",
+        "placeholder:\"(Optional) Tell us more or type your reason...\"": "placeholder:\"（可选）请告诉我们更多细节或输入您的原因...\"",
+        "aria-label:\"Reason for opting out\"": "aria-label:\"退出原因\"",
+        "tooltip:\"Edit comment\"": "tooltip:\"编辑批注\"",
+        "aria-label:\"Edit comment\"": "aria-label:\"编辑批注\"",
+        "tooltip:\"Delete comment\"": "tooltip:\"删除批注\"",
+        "aria-label:\"Delete comment\"": "aria-label:\"删除批注\"",
+        "aria-label:\"View or edit comment\"": "aria-label:\"查看或编辑批注\"",
+        "title:\"Click to view or edit comment\"": "title:\"点击查看或编辑批注\"",
+        "aria-label:\"Resume 1 comment draft\"": "aria-label:\"恢复 1 条批注草稿\"",
+        "title:\"Resume comment draft\"": "title:\"恢复批注草稿\"",
+        "aria-label:\"Discard comment draft\"": "aria-label:\"丢弃批注草稿\"",
+        "title:\"Discard comment draft\"": "title:\"丢弃批注草稿\"",
+        "aria-label:\"Inspect element to comment\"": "aria-label:\"选取页面元素以添加批注\"",
+        "aria-label:\"View comments\"": "aria-label:\"查看批注\"",
+        "aria-label:\"Comments\"": "aria-label:\"批注\"",
+        "label:\"Comments\"": "label:\"批注\"",
+        "label:\"Comment\"": "label:\"批注\"",
+        "placeholder:\"Write a comment...\"": "placeholder:\"编写批注...\"",
+        "aria-label:\"Open in full conversation\"": "aria-label:\"在完整会话中打开\"",
+        "tooltip:\"Open in full conversation\"": "tooltip:\"在完整会话中打开\"",
+        "aria-label:\"Reply to /help\"": "aria-label:\"回复 /help\"",
+        "aria-label:\"Send reply\"": "aria-label:\"发送回复\"",
+        "aria-label:\"Resize side question panel\"": "aria-label:\"调整侧边提问面板大小\"",
+        "aria-label:\"Previous side question\"": "aria-label:\"上一个侧边提问\"",
+        "aria-label:\"Next side question\"": "aria-label:\"下一个侧边提问\"",
+        "aria-label:\"Delete side question\"": "aria-label:\"删除侧边提问\"",
+        "aria-label:\"Minimize side question\"": "aria-label:\"最小化侧边提问\"",
+        "tooltip:\"Minimize\"": "tooltip:\"最小化\"",
+        "tooltip:\"Delete\"": "tooltip:\"删除\"",
+        "aria-label:\"Delete\"": "aria-label:\"删除\"",
+        "label:\"Delete Hook\"": "label:\"删除 Hook\"",
+        "label:\"Delete Handler\"": "label:\"删除处理器\"",
+        "placeholder:\"New hook name\"": "placeholder:\"新 Hook 名称\"",
+        "label:\"run_command or view_file\"": "label:\"run_command 或 view_file\"",
+        "description:\"Hook will only trigger if the tool name matches run_command or view_file.\"": "description:\"仅当工具名称匹配 run_command 或 view_file 时触发此 Hook。\"",
+        "description:\"Match when the principal belongs to the specified MDB group.\"": "description:\"当主体属于指定的 MDB 组时匹配。\"",
+        "description:\"Match when the principal equals any listed username or belongs to any listed mdb/ group.\"": "description:\"当主体等于列表中的任意用户名或属于任意 listed mdb/ 组时匹配。\"",
+        "description:\"Ignore events triggered by the automation owner to avoid self-trigger loops.\"": "description:\"忽略由自动化任务所有者触发的事件，以避免自触发循环。\"",
+        "description:\"Ignore events emitted by automated review or robot accounts (groupagent-*).\"": "description:\"忽略由自动审查或机器人账号（groupagent-*）发出的事件。\"",
+        "label:\"On a schedule\"": "label:\"按定时计划\"",
+        "label:\"When something happens\"": "label:\"当特定事件发生时\"",
+        "aria-label:\"When it runs\"": "aria-label:\"触发时机\"",
+        "placeholder:\"Search filters\\\\u2026\"": "placeholder:\"搜索筛选条件…\"",
+        "placeholder:\"Search triggers\\\\u2026\"": "placeholder:\"搜索触发器…\"",
+        "placeholder:\"Prompt to run when triggered...\"": "placeholder:\"触发时运行的提示词...\"",
+        "placeholder:\"What should the agent do on each run?\"": "placeholder:\"智能体在每次运行时应执行什么操作？\"",
+        "placeholder:\"What should the agent do on each run? For example: summarize new bugs assigned to me and anything that changed overnight.\"": "placeholder:\"智能体每次运行应做什么？例如：汇总分配给我的新缺陷及隔夜变更内容。\"",
+        "label:\"What should it do?\"": "label:\"执行任务内容\"",
+        "label:\"Every hour\"": "label:\"每小时\"",
+        "label:\"Every day\"": "label:\"每天\"",
+        "label:\"Every weekday\"": "label:\"每个工作日\"",
+        "label:\"Every week\"": "label:\"每周\"",
+        "aria-label:\"Days\"": "aria-label:\"日期\"",
+        "label:\"Schedule\"": "label:\"定时计划\"",
+        "label:\"Change schedule\"": "label:\"更改计划\"",
+        "aria-label:\"Refresh all credentials\"": "aria-label:\"刷新全部凭据\"",
+        "label:\"Refresh gcert Credentials\"": "label:\"刷新 gcert 凭据\"",
+        "title:\"Refreshed credentials for all automations.\"": "title:\"已刷新所有自动化任务的凭据。\"",
+        "title:\"Failed to refresh credentials\"": "title:\"刷新凭据失败\"",
+        "title:\"Pause this agent; it keeps its place and streams. Resume to continue.\"": "title:\"暂停此智能体；它会保留当前进度与输出流，恢复后可继续执行。\"",
+        "aria-label:\"Pause\"": "aria-label:\"暂停\"",
+        "title:\"Resume this agent where it paused\"": "title:\"从暂停处继续运行此智能体\"",
+        "title:\"Stop this agent\"": "title:\"停止此智能体\"",
+        "aria-label:\"Stop\"": "aria-label:\"停止\"",
+        "aria-label:\"Filter agents\"": "aria-label:\"筛选智能体\"",
+        "title:\"Enable Notifications\"": "title:\"启用通知\"",
+        "label:\"Got it\"": "label:\"知道了\"",
+        "label:\"Block\"": "label:\"阻止\"",
+        "label:\"In Progress\"": "label:\"进行中\"",
+        "label:\"Idle\"": "label:\"空闲\"",
+        "label:\"Fork\"": "label:\"派生对话\"",
+        "title:\"Fork\"": "title:\"派生对话\"",
+        "label:\"Split\"": "label:\"分屏\"",
+        "label:\"Share\"": "label:\"分享\"",
+        "label:\"Telemetry\"": "label:\"遥测\"",
+        "title:\"Telemetry is disabled in Settings\"": "title:\"设置中已禁用遥测\"",
+        "aria-label:\"Conversation Telemetry\"": "aria-label:\"会话遥测\"",
+        "title:\"Conversation Unarchived\"": "title:\"已取消归档对话\"",
+        "title:\"Failed to continue\"": "title:\"继续执行失败\"",
+        "label:\"Mark as Read\"": "label:\"标记为已读\"",
+        "label:\"Mark as Unread\"": "label:\"标记为未读\"",
+        "label:\"Mark All as Read\"": "label:\"全部标记为已读\"",
+        "label:\"Move to New Group\"": "label:\"移动到新分组\"",
+        "label:\"Move to Group\"": "label:\"移动到分组\"",
+        "label:\"Remove from Group\"": "label:\"从分组中移除\"",
+        "title:\"New Group\"": "title:\"新建分组\"",
+        "label:\"New Group\"": "label:\"新建分组\"",
+        "placeholder:\"Group name\"": "placeholder:\"分组名称\"",
+        "aria-label:\"Group name\"": "aria-label:\"分组名称\"",
+        "placeholder:\"Conversation name\"": "placeholder:\"对话名称\"",
+        "aria-label:\"Conversation name\"": "aria-label:\"对话名称\"",
+        "label:\"Conversation Name\"": "label:\"对话名称\"",
+        "label:\"Project Name\"": "label:\"项目名称\"",
+        "placeholder:\"Search projects...\"": "placeholder:\"搜索项目...\"",
+        "placeholder:\"Enter project name...\"": "placeholder:\"输入项目名称...\"",
+        "aria-label:\"Project location\"": "aria-label:\"项目位置\"",
+        "label:\"Jump to Previous Prompt\"": "label:\"跳转到上一条提示词\"",
+        "label:\"Jump to Next Prompt\"": "label:\"跳转到下一条提示词\"",
+        "label:\"Open Trajectory Debug View\"": "label:\"打开轨迹调试视图\"",
+        "tooltip:\"Trajectory Debug View\"": "tooltip:\"轨迹调试视图\"",
+        "label:\"Download Diagnostics\"": "label:\"下载诊断信息\"",
+        "label:\"New Window\"": "label:\"新建窗口\"",
+        "label:\"Mute Voice Mic\"": "label:\"麦克风静音\"",
+        "label:\"Mute Voice Speaker\"": "label:\"智能体扬声器静音\"",
+        "label:\"Submit Prompt (Alternate to Enter)\"": "label:\"提交提示词（Enter 备用键）\"",
+        "aria-label:\"Send message\"": "aria-label:\"发送消息\"",
+        "tooltip:\"Send Now\"": "tooltip:\"立即发送\"",
+        "aria-label:\"Message this chat\"": "aria-label:\"在此对话中发消息\"",
+        "aria-label:\"Add files\"": "aria-label:\"添加文件\"",
+        "label:\"Folder\"": "label:\"文件夹\"",
+        "label:\"Mentions\"": "label:\"提及\"",
+        "aria-label:\"Mentions\"": "aria-label:\"提及\"",
+        "label:\"Screen Recording\"": "label:\"屏幕录制\"",
+        "label:\"Drive\"": "label:\"云端硬盘\"",
+        "label:\"Conversation\"": "label:\"对话\"",
+        "label:\"Search Google Drive\"": "label:\"搜索 Google 云端硬盘\"",
+        "description:\"Install or enable the Google Drive plugin in Customizations to search files with @drive: or paste Drive links\"": "description:\"在自定义扩展中安装或启用 Google Drive 插件，即可通过 @drive: 搜索文件或粘贴云端硬盘链接\"",
+        "aria-label:\"References\"": "aria-label:\"引用参考\"",
+        "aria-label:\"Close references\"": "aria-label:\"关闭引用参考\"",
+        "aria-label:\"At mention code block\"": "aria-label:\"在提问中提及代码块\"",
+        "aria-label:\"Media actions\"": "aria-label:\"媒体操作\"",
+        "aria-label:\"Open in tab\"": "aria-label:\"在新标签页中打开\"",
+        "tooltip:\"Open in tab\"": "tooltip:\"在新标签页中打开\"",
+        "aria-label:\"Remove audio\"": "aria-label:\"移除音频\"",
+        "aria-label:\"Cancel step\"": "aria-label:\"取消步骤\"",
+        "title:\"Failed to export artifact\"": "title:\"导出产物失败\"",
+        "title:\"Uploading to Google Drive\\\\u2026\"": "title:\"正在上传到 Google 云端硬盘…\"",
+        "title:\"Uploaded to Google Drive\"": "title:\"已上传到 Google 云端硬盘\"",
+        "aria-label:\"What counts as a document\"": "aria-label:\"哪些内容计为文档\"",
+        "emptyText:\"No documents\"": "emptyText:\"暂无文档\"",
+        "title:\"Uploads\"": "title:\"上传文件\"",
+        "emptyText:\"No uploads\"": "emptyText:\"暂无上传文件\"",
+        "emptyText:\"No links\"": "emptyText:\"暂无链接\"",
+        "label:\"Good Response\"": "label:\"回答不错\"",
+        "label:\"Bad Response\"": "label:\"回答不佳\"",
+        "aria-label:\"Notifications\"": "aria-label:\"通知\"",
+        "aria-label:\"Dismiss notification\"": "aria-label:\"关闭通知\"",
+        "label:\"See all\"": "label:\"查看全部\"",
+        "label:\"See more results\"": "label:\"查看更多结果\"",
+        # --- 2.32.2 Domain C: 代码编辑器、Git/分支、SSH/远程、终端、Diff 与媒体/PDF ---
+        "label:\"Code Search\"": "label:\"代码搜索\"",
+        "title:\"Code Search\"": "title:\"代码搜索\"",
+        "tooltip:\"Code Search\"": "tooltip:\"代码搜索\"",
+        "title:\"Files\"": "title:\"文件\"",
+        "label:\"Files\"": "label:\"文件\"",
+        "title:\"Commands\"": "title:\"命令\"",
+        "label:\"Commands\"": "label:\"命令\"",
+        "label:\"Generations\"": "label:\"生成记录\"",
+        "label:\"Read files\"": "label:\"读取文件\"",
+        "label:\"Write files\"": "label:\"写入文件\"",
+        "label:\"Output\"": "label:\"输出\"",
+        "label:\"Logs\"": "label:\"日志\"",
+        "label:\"Errors\"": "label:\"错误\"",
+        "aria-label:\"Close Logs Modal\"": "aria-label:\"关闭日志弹窗\"",
+        "aria-label:\"Filter files\"": "aria-label:\"筛选文件\"",
+        "aria-label:\"Clear file filter\"": "aria-label:\"清除文件筛选\"",
+        "placeholder:\"Filter rows...\"": "placeholder:\"筛选行...\"",
+        "aria-label:\"Filter rows\"": "aria-label:\"筛选行\"",
+        "aria-label:\"Clear row filter\"": "aria-label:\"清除行筛选\"",
+        "aria-label:\"Clear filter\"": "aria-label:\"清除筛选\"",
+        "aria-label:\"Match case\"": "aria-label:\"区分大小写\"",
+        "aria-label:\"Match whole word\"": "aria-label:\"全字匹配\"",
+        "aria-label:\"Use regular expression\"": "aria-label:\"使用正则表达式\"",
+        "aria-label:\"Find\"": "aria-label:\"查找\"",
+        "placeholder:\"Find\"": "placeholder:\"查找\"",
+        "aria-label:\"Previous match\"": "aria-label:\"上一个匹配项\"",
+        "title:\"Previous match\"": "title:\"上一个匹配项\"",
+        "aria-label:\"Next match\"": "aria-label:\"下一个匹配项\"",
+        "title:\"Next match\"": "title:\"下一个匹配项\"",
+        "aria-label:\"Open Search\"": "aria-label:\"打开搜索\"",
+        "title:\"Open Search\"": "title:\"打开搜索\"",
+        "aria-label:\"Clear Search\"": "aria-label:\"清除搜索\"",
+        "title:\"Clear Search\"": "title:\"清除搜索\"",
+        "title:\"view full search results\"": "title:\"查看完整搜索结果\"",
+        "placeholder:\"Search branches\"": "placeholder:\"搜索分支\"",
+        "title:\"Local\"": "title:\"本地\"",
+        "label:\"Local\"": "label:\"本地\"",
+        "label:\"Worktree\"": "label:\"Worktree 工作树\"",
+        "title:\"New Worktree\"": "title:\"新建 Worktree\"",
+        "title:\"Remote\"": "title:\"远程\"",
+        "title:\"SSH Host\"": "title:\"SSH 主机\"",
+        "aria-label:\"SSH host\"": "aria-label:\"SSH 主机\"",
+        "aria-label:\"Hidden hosts\"": "aria-label:\"已隐藏主机\"",
+        "label:\"SSH Host\\\\u2026\"": "label:\"SSH 主机…\"",
+        "label:\"SSH Config\"": "label:\"SSH 配置\"",
+        "label:\"Connect to SSH Host\\\\u2026\"": "label:\"连接到 SSH 主机…\"",
+        "label:\"Stop SSH Server\\\\u2026\"": "label:\"停止 SSH 服务…\"",
+        "label:\"Switch to This Computer\"": "label:\"切换回本机\"",
+        "tooltip:\"Remove from Recent\"": "tooltip:\"从最近列表中移除\"",
+        "heading:\"WSL\"": "heading:\"WSL\"",
+        "heading:\"Switch To\"": "heading:\"切换到\"",
+        "label:\"Commit\"": "label:\"提交 (Commit)\"",
+        "label:\"Push\"": "label:\"推送 (Push)\"",
+        "label:\"Discard\"": "label:\"放弃更改\"",
+        "label:\"Connect GitHub\"": "label:\"连接 GitHub\"",
+        "aria-label:\"Connect GitHub\"": "aria-label:\"连接 GitHub\"",
+        "aria-label:\"Copy gh auth login command\"": "aria-label:\"复制 gh auth login 登录命令\"",
+        "title:\"GitHub Personal Access Token\"": "title:\"GitHub 个人访问令牌\"",
+        "title:\"GitHub Policies\"": "title:\"GitHub 策略\"",
+        "subtitle:\"Enable fine-grained GitHub permissions and define the org, repository, and resource-level access the agent is allowed to use.\"": "subtitle:\"启用精细化 GitHub 权限，并定义智能体允许访问的组织、仓库及资源级权限。\"",
+        "title:\"GitHub Permissions\"": "title:\"GitHub 权限\"",
+        "description:\"Manage fine-grained permissions for GitHub.\"": "description:\"管理 GitHub 的精细化访问权限。\"",
+        "label:\"Pull Requests\"": "label:\"拉取请求 (PR)\"",
+        "aria-label:\"Delete repository policy\"": "aria-label:\"删除仓库策略\"",
+        "aria-label:\"Delete organization policy\"": "aria-label:\"删除组织策略\"",
+        "aria-label:\"Remove policy\"": "aria-label:\"移除策略\"",
+        "label:\"Toggle Thumbnails\"": "label:\"切换缩略图\"",
+        "title:\"Toggle Thumbnails\"": "title:\"切换缩略图\"",
+        "aria-label:\"Previous Page\"": "aria-label:\"上一页\"",
+        "title:\"Previous Page\"": "title:\"上一页\"",
+        "aria-label:\"Current Page\"": "aria-label:\"当前页\"",
+        "aria-label:\"Next Page\"": "aria-label:\"下一页\"",
+        "title:\"Next Page\"": "title:\"下一页\"",
+        "aria-label:\"Zoom Level\"": "aria-label:\"缩放比例\"",
+        "aria-label:\"More toolbar actions\"": "aria-label:\"更多工具栏操作\"",
+        "label:\"Thumbnails\"": "label:\"缩略图\"",
+        "label:\"Zoom\"": "label:\"缩放\"",
+        "aria-label:\"Zoom\"": "aria-label:\"缩放\"",
+        "label:\"Zoom out (-)\"": "label:\"缩小 (-)\"",
+        "title:\"Reset zoom (0)\"": "title:\"重置缩放 (0)\"",
+        "label:\"Zoom in (+)\"": "label:\"放大 (+)\"",
+        "label:\"Close (Esc)\"": "label:\"关闭 (Esc)\"",
+        "label:\"Fit Mode\"": "label:\"适配模式\"",
+        "aria-label:\"Download PDF\"": "aria-label:\"下载 PDF\"",
+        "title:\"Download PDF\"": "title:\"下载 PDF\"",
+        "placeholder:\"Target text in PDF...\"": "placeholder:\"PDF 中的目标文本...\"",
+        "label:\"Seek\"": "label:\"进度定位\"",
+        "label:\"Back 5s (\\\\u2190)\"": "label:\"快退 5 秒 (←)\"",
+        "label:\"Forward 5s (\\\\u2192)\"": "label:\"快进 5 秒 (→)\"",
+        "label:\"Volume\"": "label:\"音量\"",
+        "title:\"Playback speed (< / >)\"": "title:\"播放倍速 (< / >)\"",
+        "aria-label:\"2x playback speed\"": "aria-label:\"2 倍速播放\"",
+        "label:\"Theme\"": "label:\"主题\"",
+        "label:\"Font\"": "label:\"字体\"",
+        "label:\"Font Size\"": "label:\"字号\"",
+        "label:\"Before\"": "label:\"变更前\"",
+        "label:\"After\"": "label:\"变更后\"",
+        "label:\"Auto\"": "label:\"自动模式\"",
+        "label:\"Turbo\"": "label:\"极速狂飙 (Turbo)\"",
+        "title:\"Open on another device\"": "title:\"在其他设备上打开\"",
+        "description:\"Pick up this remote conversation on your phone or in any browser. Scan the QR code or open the link below.\"": "description:\"在手机或任意浏览器上接续此远程对话，请扫描二维码或打开下方链接。\"",
+        "tooltip:\"Open on phone\"": "tooltip:\"在手机上打开\"",
+        "aria-label:\"Open in Cider\"": "aria-label:\"在 Cider 中打开\"",
+        "label:\"Open In\"": "label:\"打开方式\"",
+        "label:\"Link Settings\"": "label:\"链接设置\"",
+        "label:\"Members\"": "label:\"成员\"",
+        "label:\"Owner\"": "label:\"所有者\"",
+        "label:\"Author\"": "label:\"作者\"",
+        "label:\"Other\"": "label:\"其他\"",
+        "label:\"Open\"": "label:\"打开\"",
+        # --- 2.32.2 纯界面长句与专属组合（严格长度 >= 25 且无代码逻辑碰撞风险）---
+        "Open Blame in Code Search": "在代码搜索中打开 Blame",
+        "Open extracted DOM in editor": "在编辑器中打开提取的 DOM",
+        "File Tree Component is not loaded.": "文件树组件尚未加载。",
+        "Grant create, update, or delete access to specific branches.": "授予对特定分支的创建、更新或删除权限。",
+        "Read access to code, refs, commits, and other repository contents.": "对代码、引用、提交及其他仓库内容的读取权限。",
+        "Antigravity would like to use the browser.": "Antigravity 请求使用浏览器。",
+        "Browser is currently being operated by this conversation in another Hub window": "浏览器当前正由本会话在另一个 Hub 窗口中操作",
+        "Let's tailor the experience for you. What best describes your work?": "让我们为您定制专属体验。以下哪项最符合您的工作角色？",
+        "Creating projects for your conversations": "正在为您的对话创建项目",
+        "Go to the machine you are controlling and quit Antigravity. It installs pending updates the next time it starts.": "请前往您正在控制的机器并退出 Antigravity，软件将在下次启动时安装待处理的更新。",
+        "Sign in in your browser, then paste the authorization code shown on the callback page.": "请在浏览器中完成登录，然后粘贴回调页面显示的授权码。",
+        "Please sign in using the Antigravity sidebar panel to view this page.": "请先使用 Antigravity 侧边栏面板登录，再查看此页面。",
+        "Enable fine-grained GitHub permissions and define the org, repository, and resource-level access the agent is allowed to use.": "启用精细化 GitHub 权限，并定义智能体允许访问的组织、仓库及资源级权限。",
+        "Run a prompt on a schedule, like a morning summary of yesterday's changes. Runs show up here.": "按计划定时运行提示词（例如每天早晨总结昨天的变更），运行记录会显示在这里。",
+        "Run the app against a Linux environment. Connecting relaunches the app into the selected WSL distro.": "在 Linux 环境中运行应用。连接后将在所选 WSL 发行版中重启应用。",
+        "The agent will wait for you to install the browser extension.": "智能体将等待您安装浏览器扩展程序。",
+        "No internet. Agent features may not work.": "当前无网络连接，智能体功能可能无法正常工作。",
+        "No customizations match your search.": "没有与您的搜索匹配的自定义项。",
+        "There are no customizations enabled.": "当前未启用任何自定义项。",
+        "You can also add or remove each plugin below.": "您也可以在下方单独添加或移除每个插件。",
+        "Use Antigravity through your Gemini subscription.": "通过您的 Gemini 订阅使用 Antigravity。",
+        "This skill came from the marketplace, so you can add it again whenever you need it.": "此技能来自扩展市场，您可以在需要时随时重新添加。",
+        "View archived in the sidebar (Display options menu).": "在侧边栏（显示选项菜单）中查看已归档会话。",
+        "Start without a workspace, for general questions.": "不绑定工作区直接开始，适合常规问答。",
+        "Configure what the agent can do in local and remote conversations.": "配置智能体在本地和远程会话中可执行的操作权限。",
+        "Allow Gemini to notify you when the agent needs your attention or completes a task.": "允许 Gemini 在智能体需要您确认或完成任务时向您发送通知。",
+        "Choose whether to be notified when the agent needs your attention or completes a task.": "选择是否在智能体需要您关注或完成任务时接收通知。",
+        "Get notified when the agent needs your attention or completes a task.": "在智能体需要您处理或完成任务时获取通知。",
+        "Relaunch the app once to activate Screen Recording.": "请重新启动一次应用以激活屏幕录制功能。",
+        "Only this conversation uses this preset.": "仅当前会话使用此预设。",
+        "You are logged in using environment credentials and cannot sign out from the application.": "您当前正使用环境凭据登录，无法从应用中退出登录。",
+        "Your Antigravity use will be associated with provided project.": "您的 Antigravity 使用记录将关联至所提供的项目。",
+        "No matching project folders. Apply to use the custom URI.": "未找到匹配的项目文件夹。点击应用即可使用自定义 URI。",
+        "Telemetry is off for all conversations.": "已对所有对话关闭遥测。",
+        "Telemetry is off for this conversation.": "已对当前对话关闭遥测。",
+        "Enable telemetry in Settings before changing per-conversation telemetry.": "修改单个对话的遥测设置前，请先在设置中启用遥测。",
+        "Connect an account so the agent can run automations.": "请连接账号以便智能体运行自动化任务。",
+        "Automatically create a new Cog workspace when the conversation starts": "对话开始时自动创建新的 Cog 工作区",
+        "The app is currently connected to a WSL distro. Reopening locally relaunches it directly on Windows.": "应用当前已连接到 WSL 发行版。以本地模式重新打开将在 Windows 上直接重启。",
+        "To use browser tools, you need to enable remote debugging:": "要使用浏览器工具，您需要开启远程调试：",
+        "Generate a commit message for the following file changes, which are likely relevant to this conversation.": "为以下可能与当前对话相关的文件变更生成提交信息。",
 }
 
     print("Applying translations...")
@@ -4736,8 +5247,6 @@ def main():
     "Contrast": "对比度模式",
     "High Contrast": "高对比度",
     "Standard Contrast": "标准对比度",
-    "Default Light": "默认浅色",
-    "Default Dark": "默认深色",
     "Console Telemetry": "控制台遥测日志",
     "Custom Flags": "自定义实验性特性开关 (Custom Flags)",
     "Search flags": "搜索实验性开关...",
@@ -5021,6 +5530,9 @@ def main():
     "Press keys...": "请按下组合按键...",
     "Middle Click": "鼠标中键单击",
     "Layout Controls": "界面布局控制",
+    "Email": "邮箱",
+    "System Prompt": "系统提示词",
+    "Deny": "拒绝",
     "File Picker": "文件检索器",
     "Open Command Palette": "打开全局命令面板",
     "Code Search": "代码检索",
@@ -5173,348 +5685,793 @@ def main():
     "Error while running MCP tool": "执行 MCP 工具时出错",
     "`Conflicts with \"${": "`与“${",
     "}\" (press Enter to replace)`": "}”发生冲突（按 Enter 键替换）`",
-};;;
+    // --- 2.32.2 运行时 UI 补充词典 ---
+    "Enter to Send": "按 Enter 发送",
+    "Conversation Steps": "对话步骤详情",
+    "Context and Quota Indicator": "上下文与配额指示器",
+    "Prevent Sleep": "阻止系统休眠",
+    "Nickname": "设备昵称",
+    "Default Cog Repository": "默认 Cog 仓库",
+    "Default Cog Branch / Ref": "默认 Cog 分支 / Ref",
+    "Connectors": "连接器",
+    "Browse Connectors": "浏览连接器",
+    "Search connectors": "搜索连接器",
+    "Coordinators": "协调器",
+    "No coordinators": "暂无协调器",
+    "New Coordinator": "新建协调器",
+    "Create Coordinator": "创建协调器",
+    "Coordinator settings": "协调器设置",
+    "Google One Referral": "Google One 推荐奖励",
+    "Share your referral link with friends": "向好友分享您的推荐链接",
+    "Announcements and tips": "公告与使用技巧",
+    "Cookies and site data": "Cookie 与网站数据",
+    "Clear cookies and site data": "清除 Cookie 与网站数据",
+    "Browser downloads": "浏览器下载",
+    "Browser actions": "浏览器操作",
+    "Browser Use": "浏览器控制",
+    "CitC Workspace": "CitC 工作区",
+    "Cog Workspace": "Cog 工作区",
+    "ABFS Workspace (Alpha)": "ABFS 工作区 (Alpha)",
+    "CitC Workspace Type": "CitC 工作区类型",
+    "Create CitC Workspace": "创建 CitC 工作区",
+    "Create Cog Workspace": "创建 Cog 工作区",
+    "Create ABFS Workspace (Alpha)": "创建 ABFS 工作区 (Alpha)",
+    "Select CitC Workspace": "选择 CitC 工作区",
+    "Select Cog Workspace": "选择 Cog 工作区",
+    "Select ABFS Workspace (Alpha)": "选择 ABFS 工作区 (Alpha)",
+    "More cloud environments": "更多云端环境",
+    "Best-of-N Started": "Best-of-N 已开始",
+    "Best-of-N Ended": "Best-of-N 已结束",
+    "Best of N Models": "Best of N 模型",
+    "Best of N mode is not available": "Best of N 模式不可用",
+    "Not suitable for Best-of-N": "不适合 Best-of-N 模式",
+    "Too many surveys": "问卷触发过于频繁",
+    "Prompt too simple": "提示词过于简单",
+    "In a rush": "赶时间",
+    "Why are you opting out of auto-triggered Best-of-N?": "为什么选择退出自动触发的 Best-of-N？",
+    "Delete Side Question": "删除侧边提问",
+    "Delete side question": "删除侧边提问",
+    "Minimize side question": "最小化侧边提问",
+    "Next side question": "下一个侧边提问",
+    "Previous side question": "上一个侧边提问",
+    "Resize side question panel": "调整侧边提问面板大小",
+    "Reply to /help": "回复 /help",
+    "Open in full conversation": "在完整会话中打开",
+    "Delete Hook": "删除 Hook",
+    "Delete Handler": "删除处理器",
+    "Add Handler": "添加处理器",
+    "New hook name": "新 Hook 名称",
+    "Edit comment": "编辑批注",
+    "Edit Comment": "编辑批注",
+    "Delete comment": "删除批注",
+    "Discard comment draft": "丢弃批注草稿",
+    "Resume comment draft": "恢复批注草稿",
+    "Drag to select a region to comment": "拖拽以框选需要批注的区域",
+    "Inspect element to comment": "选取页面元素以添加批注",
+    "Click to view or edit comment": "点击查看或编辑批注",
+    "View or edit comment": "查看或编辑批注",
+    "Write a comment...": "编写批注...",
+    "Commented on: ": "批注于：",
+    "Open Blame in Code Search": "在代码搜索中打开 Blame",
+    "Open extracted DOM in editor": "在编辑器中打开提取的 DOM",
+    "Files to edit:": "待编辑文件：",
+    "Filter files": "筛选文件",
+    "Clear file filter": "清除文件筛选",
+    "Clear row filter": "清除行筛选",
+    "Search branches": "搜索分支",
+    "Remote branches": "远程分支",
+    "Commit": "提交 (Commit)",
+    "Push": "推送 (Push)",
+    "Local": "本地",
+    "Remote": "远程",
+    "Worktree": "Worktree 工作树",
+    "New Worktree": "新建 Worktree",
+    "Previous Worktrees": "历史 Worktree",
+    "Work in a New Worktree": "在新的 Worktree 中工作",
+    "Code Preview": "代码预览",
+    "Connect GitHub": "连接 GitHub",
+    "GitHub Repositories": "GitHub 仓库",
+    "GitHub Policies": "GitHub 策略",
+    "GitHub Permissions": "GitHub 权限",
+    "GitHub Personal Access Token": "GitHub 个人访问令牌",
+    "Manage fine-grained permissions for GitHub.": "管理 GitHub 的精细化访问权限。",
+    "Grant repository access": "授予仓库访问权限",
+    "Read access": "读取权限",
+    "Issue creation": "创建 Issue",
+    "Pull request creation": "创建 Pull Request",
+    "Pull Requests": "拉取请求 (PR)",
+    "Remote only": "仅远程",
+    "Local only": "仅本地",
+    "Connect to SSH Host…": "连接到 SSH 主机…",
+    "Connect to SSH Host": "连接到 SSH 主机",
+    "Stop SSH Server…": "停止 SSH 服务…",
+    "Switch to This Computer": "切换回本机",
+    "Runs on this computer": "在本机运行",
+    "Runs remotely": "远程运行",
+    "Runs in a cloud environment": "在云端环境中运行",
+    "Built In": "内置",
+    "Sign in again": "重新登录",
+    "Sign In with SSO": "使用 SSO 登录",
+    "Business Account Sign In": "企业账号登录",
+    "Use Business Account": "使用企业账号",
+    "Continue with Google": "使用 Google 账号继续",
+    "Continue with Google Cloud": "使用 Google Cloud 账号继续",
+    "Continue with different account": "使用其他账号继续",
+    "Sign in with a different account": "使用其他账号登录",
+    "Log in": "登录",
+    "Not signed in": "未登录",
+    "Sign-in required": "需要登录",
+    "Sign in needed": "需要登录",
+    "Unauthenticated": "未验证",
+    "Choose a Subscription": "选择订阅方案",
+    "Select your license": "选择您的许可证",
+    "Select License": "选择许可证",
+    "Subscription": "订阅制",
+    "Pay As You Go": "按量付费",
+    "Billing model": "计费模式",
+    "Switch Roles": "切换角色",
+    "Build new features": "构建新功能",
+    "Debug and fix": "调试与修复",
+    "Research anything": "深度调研任意主题",
+    "Write and edit docs": "撰写与编辑文档",
+    "Getting started with Google Antigravity": "Google Antigravity 入门指南",
+    "Google Antigravity - Experience liftoff": "Google Antigravity - 体验全新跃升",
+    "Optimized for you": "为您量身优化",
+    "Built to help, not hurt": "助您提效，安全可控",
+    "You are in control": "一切尽在您的掌控",
+    "Stay up to date.": "保持版本最新",
+    "Quick Start": "快速开始",
+    "Get started": "开始使用",
+    "Invite a Friend": "邀请好友",
+    "Prohibited Use Policy": "禁止使用政策",
+    "Terms of Service & Data Use": "服务条款与数据使用声明",
+    "Legal Help": "法律帮助",
+    "Create a Plugin with the Agent": "通过智能体创建插件",
+    "More Plugins": "更多插件",
+    "Marketplace": "扩展市场",
+    "View MCP servers": "查看 MCP 服务器",
+    "Search Google Drive": "搜索 Google 云端硬盘",
+    "On a schedule": "按定时计划",
+    "When something happens": "当特定事件发生时",
+    "What should it do?": "执行任务内容",
+    "Every hour": "每小时",
+    "Every day": "每天",
+    "Every weekday": "每个工作日",
+    "Every week": "每周",
+    "Schedule": "定时计划",
+    "Change schedule": "更改计划",
+    "Run Now": "立即运行",
+    "Last run": "上次运行",
+    "Next run": "下次运行",
+    "All runs": "全部运行记录",
+    "No runs yet": "暂无运行记录",
+    "Refresh gcert Credentials": "刷新 gcert 凭据",
+    "Refresh all credentials": "刷新全部凭据",
+    "Daily environment time used": "今日环境使用时长",
+    "Too many environments running": "运行中的环境过多",
+    "Plan upgrade required": "需要升级套餐",
+    "Daily conversation limit reached": "已达到每日对话上限",
+    "Conversation limit reached": "已达到对话上限",
+    "Remote agents are busy": "远程智能体正忙",
+    "Starting the conversation…": "正在启动对话…",
+    "Resolving link…": "正在解析链接…",
+    "Custom…": "自定义…",
+    "Mark as Read": "标记为已读",
+    "Mark as Unread": "标记为未读",
+    "Mark All as Read": "全部标记为已读",
+    "Only Unread": "仅显示未读",
+    "Only Archived": "仅显示已归档",
+    "Move to New Group": "移动到新分组",
+    "Move to Group": "移动到分组",
+    "Remove from Group": "从分组中移除",
+    "New Group": "新建分组",
+    "Sort By": "排序方式",
+    "Group By": "分组方式",
+    "Custom Order": "自定义排序",
+    "Last Updated": "最近更新",
+    "Last Prompt": "最近提示词",
+    "Last Used": "最近使用",
+    "Pin / Unpin Conversation": "固定 / 取消固定对话",
+    "Open Trajectory Debug View": "打开轨迹调试视图",
+    "Trajectory Debug View": "轨迹调试视图",
+    "Trajectory Stats": "轨迹统计",
+    "Download Diagnostics": "下载诊断信息",
+    "Jump to Previous Prompt": "跳转到上一条提示词",
+    "Jump to Next Prompt": "跳转到下一条提示词",
+    "New Window": "新建窗口",
+    "Reload Window": "重新加载窗口",
+    "Reload this window.": "重新加载此窗口。",
+    "Mute Voice Mic": "麦克风静音",
+    "Mute Voice Speaker": "智能体扬声器静音",
+    "Start Voice mode": "开启语音模式",
+    "End Voice mode": "结束语音模式",
+    "Voice mode in progress": "语音模式进行中",
+    "Start Live Chat": "开启实时对话",
+    "End Live chat": "结束实时对话",
+    "Live chat in progress": "实时对话进行中",
+    "Save audio recordings": "保存音频录制",
+    "Delete all recordings?": "确定删除所有录音吗？",
+    "Voice speed": "语速",
+    "Switch mic": "切换麦克风",
+    "Capture Screenshot": "截取屏幕截图",
+    "Mention Page": "提及当前网页",
+    "Open in external browser": "在外部浏览器中打开",
+    "Open System Browser": "打开系统浏览器",
+    "Open Antigravity IDE": "打开 Antigravity IDE",
+    "Open in Antigravity IDE": "在 Antigravity IDE 中打开",
+    "Open in Hub": "在 Hub 中打开",
+    "Open in tab": "在新标签页中打开",
+    "Open on another device": "在其他设备上打开",
+    "Open on phone": "在手机上打开",
+    "Open Browser Setup": "打开浏览器配置",
+    "Confirm Browser Interaction": "确认浏览器交互",
+    "Deny setting up browser": "拒绝配置浏览器",
+    "Launching the browser...": "正在启动浏览器...",
+    "No browser pages open": "未打开任何浏览器页面",
+    "This site can’t be reached": "无法访问此网站",
+    "This page isn’t working": "此网页无法正常运作",
+    "Password Prompt Blocked": "已拦截密码输入提示",
+    "Denied Sites": "已拒绝的网站",
+    "Zoom out (-)": "缩小 (-)",
+    "Zoom in (+)": "放大 (+)",
+    "Reset zoom (0)": "重置缩放 (0)",
+    "Zoom to Fit": "缩放至适应窗口",
+    "Close (Esc)": "关闭 (Esc)",
+    "Close (Escape)": "关闭 (Escape)",
+    "Toggle Thumbnails": "切换缩略图",
+    "Hide Thumbnail Sidebar": "隐藏缩略图侧边栏",
+    "Show Thumbnail Sidebar": "显示缩略图侧边栏",
+    "Previous Page": "上一页",
+    "Next Page": "下一页",
+    "Download PDF": "下载 PDF",
+    "Target text in PDF...": "PDF 中的目标文本...",
+    "Back to chat": "返回对话",
+    "Back to home": "返回首页",
+    "Back to safety": "返回安全页面",
+    "Copy as Markdown": "复制为 Markdown",
+    "Path copied!": "路径已复制！",
+    "Accept all": "全部接受",
+    "Needs Attention": "需要关注",
+    "No agent is working right now.": "当前没有正在运行的智能体。",
+    "No changes to review": "没有需要评审的变更",
+    "No comments yet": "暂无批注",
+    "No documents": "暂无文档",
+    "No uploads": "暂无上传文件",
+    "No links": "暂无链接",
+    "No environments found": "未找到任何环境",
+    "No events recorded": "暂无事件记录",
+    "No extensions available": "暂无可用扩展",
+    "No matching files": "无匹配文件",
+    "No matching plugins found.": "未找到匹配的插件。",
+    "No matching results": "无匹配结果",
+    "No previous worktrees": "暂无历史 Worktree",
+    "No project selected": "未选择项目",
+    "No projects created": "暂未创建项目",
+    "No recent downloads": "暂无最近下载",
+    "No resources available": "暂无可用资源",
+    "No results": "无结果",
+    "No skills available": "暂无可用技能",
+    "No workspaces open.": "未打开任何工作区。",
+    "Developer: Reset Onboarding": "开发者：重置新手引导",
+    "Developer: Reset NUX": "开发者：重置新手体验 (NUX)",
+    "Workspace URI Switcher": "工作区 URI 切换器",
+    "Workspace URI query parameter": "工作区 URI 查询参数",
+    "All agents": "全部智能体",
+    "Stop all agents": "停止所有智能体",
+    "Loading available plugins...": "正在加载可用插件...",
+    "Loading installed plugins...": "正在加载已安装插件...",
+    "Loading conversations...": "正在加载对话...",
+    "Loading customizations...": "正在加载自定义设置...",
+    "Loading hooks...": "正在加载 Hook...",
+    "Loading licenses...": "正在加载许可证...",
+    "Loading models...": "正在加载模型...",
+    "Loading plugins...": "正在加载插件...",
+    "Loading trajectory...": "正在加载执行轨迹...",
+    "Loading worktrees...": "正在加载 Worktree...",
+    "Restart to Update": "重启以完成更新",
+    "Match Case (Aa)": "区分大小写 (Aa)",
+    "Match Whole Word (ab)": "全字匹配 (ab)",
+    "Next Match (Enter)": "下一个匹配项 (Enter)",
+};
 
 
   const translateDynamicRegex = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    const t = text.trim();
+    if (!t) return text;
+    const leadIdx = text.indexOf(t);
+    const lead = text.slice(0, leadIdx);
+    const trail = text.slice(leadIdx + t.length);
+    const wrap = (res) => lead + res + trail;
+
+    // --- 2.32.2 新增动态界面文本正则 ---
+    if (/^Thinking \((\d+)s\)[….]*$/.test(t)) {
+      return wrap(t.replace(/^Thinking \((\d+)s\)[….]*$/, "思考中 ($1 秒)…"));
+    }
+    if (/^Working · (\d+)s$/.test(t)) {
+      return wrap(t.replace(/^Working · (\d+)s$/, "运行中 · $1 秒"));
+    }
+    if (/^Using browser · (.+) \((\d+)s\)$/.test(t)) {
+      return wrap(t.replace(/^Using browser · (.+) \((\d+)s\)$/, "正在使用浏览器 · $1 ($2 秒)"));
+    }
+    if (/^Using browser \((\d+)s\)$/.test(t)) {
+      return wrap(t.replace(/^Using browser \((\d+)s\)$/, "正在使用浏览器 ($1 秒)"));
+    }
+    if (/^Using browser · (.+)$/.test(t)) {
+      return wrap(t.replace(/^Using browser · (.+)$/, "正在使用浏览器 · $1"));
+    }
+    if (/^Agent finished: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Agent finished: (.+)$/, "智能体已完成：$1"));
+    }
+    if (/^Agent permissions preset selector, current: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Agent permissions preset selector, current: (.+)$/, "智能体权限预设选择器，当前：$1"));
+    }
+    if (/^Agent permissions preset: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Agent permissions preset: (.+)$/, "智能体权限预设：$1"));
+    }
+    if (/^Where the agent runs, current: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Where the agent runs, current: (.+)$/, "智能体运行位置，当前：$1"));
+    }
+    if (/^View Diff for (.+)$/.test(t)) {
+      return wrap(t.replace(/^View Diff for (.+)$/, "查看差异对比：$1"));
+    }
+    if (/^Go to turn (\d+) of (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Go to turn (\d+) of (\d+)$/, "跳转到第 $1 轮（共 $2 轮）"));
+    }
+    if (/^Turns (\d+)[–-](\d+)$/.test(t)) {
+      return wrap(t.replace(/^Turns (\d+)[–-](\d+)$/, "第 $1–$2 轮"));
+    }
+    if (/^Turn (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Turn (\d+)$/, "第 $1 轮"));
+    }
+    if (/^Step (\d+) of (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Step (\d+) of (\d+)$/, "第 $1 步（共 $2 步）"));
+    }
+    if (/^Show (\d+) earlier steps?$/.test(t)) {
+      return wrap(t.replace(/^Show (\d+) earlier steps?$/, "展开更早的 $1 个步骤"));
+    }
+    if (/^Terminal process (.+) exited with non-zero code (-?\d+)$/.test(t)) {
+      return wrap(t.replace(/^Terminal process (.+) exited with non-zero code (-?\d+)$/, "终端进程 $1 已退出，非零退出代码：$2"));
+    }
+    if (/^Closed (\d+) terminals?$/.test(t)) {
+      return wrap(t.replace(/^Closed (\d+) terminals?$/, "已关闭 $1 个终端"));
+    }
+    if (/^Cancel Questionnaire and Stop the Agent \((.+)\)$/.test(t)) {
+      return wrap(t.replace(/^Cancel Questionnaire and Stop the Agent \((.+)\)$/, "取消问卷并停止智能体 ($1)"));
+    }
+    if (/^Worktree from (.+)$/.test(t)) {
+      return wrap(t.replace(/^Worktree from (.+)$/, "基于 $1 创建 Worktree"));
+    }
+    if (/^Work in (.+)$/.test(t)) {
+      return wrap(t.replace(/^Work in (.+)$/, "工作于 $1"));
+    }
+    if (/^Searched for files: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Searched for files: (.+)$/, "已搜索文件：$1"));
+    }
+    if (/^Searched for "(.+)"$/.test(t)) {
+      return wrap(t.replace(/^Searched for "(.+)"$/, "已搜索“$1”"));
+    }
+    if (/^Code search: "(.+)"$/.test(t)) {
+      return wrap(t.replace(/^Code search: "(.+)"$/, "代码搜索：“$1”"));
+    }
+    if (/^Searched web: "(.+)"$/.test(t)) {
+      return wrap(t.replace(/^Searched web: "(.+)"$/, "网页搜索：“$1”"));
+    }
+    if (/^Opened browser: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Opened browser: (.+)$/, "已打开浏览器：$1"));
+    }
+    if (/^Read URL: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Read URL: (.+)$/, "已读取网址：$1"));
+    }
+    if (/^Listed directory (.+)$/.test(t)) {
+      return wrap(t.replace(/^Listed directory (.+)$/, "已列出目录：$1"));
+    }
+    if (/^Used MCP tool: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Used MCP tool: (.+)$/, "已使用 MCP 工具：$1"));
+    }
+    if (/^Fix with Agent: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Fix with Agent: (.+)$/, "使用智能体修复：$1"));
+    }
+    if (/^Help: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Help: (.+)$/, "帮助：$1"));
+    }
+    if (/^Push (\d+) commits? to (.+)$/.test(t)) {
+      return wrap(t.replace(/^Push (\d+) commits? to (.+)$/, "推送 $1 个提交到 $2"));
+    }
+    if (/^Pushed (\d+) commits? to (.+)\.$/.test(t)) {
+      return wrap(t.replace(/^Pushed (\d+) commits? to (.+)\.$/, "已推送 $1 个提交到 $2。"));
+    }
+    if (/^Pushed to (.+)\.$/.test(t)) {
+      return wrap(t.replace(/^Pushed to (.+)\.$/, "已推送到 $1。"));
+    }
+    if (/^Committed to (.+)\.$/.test(t)) {
+      return wrap(t.replace(/^Committed to (.+)\.$/, "已提交到 $1。"));
+    }
+    if (/^Publish (.+) to origin$/.test(t)) {
+      return wrap(t.replace(/^Publish (.+) to origin$/, "发布 $1 到 origin"));
+    }
+    if (/^Published (.+) to origin\.$/.test(t)) {
+      return wrap(t.replace(/^Published (.+) to origin\.$/, "已发布 $1 到 origin。"));
+    }
+    if (/^Compare responses from (\d+) models side-by-side to find the best result\.$/.test(t)) {
+      return wrap(t.replace(/^Compare responses from (\d+) models side-by-side to find the best result\.$/, "并排比较 $1 个模型的回复，选出最佳结果。"));
+    }
+    if (/^Your quota for (.+) will reset on (.+)\. Switch to another available model to continue\.$/.test(t)) {
+      return wrap(t.replace(/^Your quota for (.+) will reset on (.+)\. Switch to another available model to continue\.$/, "您的 $1 配额将于 $2 重置。请切换至其他可用模型继续。"));
+    }
+    if (/^Your quota for (.+) has been reached\. Switch to another available model to continue\.$/.test(t)) {
+      return wrap(t.replace(/^Your quota for (.+) has been reached\. Switch to another available model to continue\.$/, "您的 $1 配额已用尽。请切换至其他可用模型继续。"));
+    }
+    if (/^Hey (.+), what should we build today\?$/.test(t)) {
+      return wrap(t.replace(/^Hey (.+), what should we build today\?$/, "你好 $1，今天我们构建些什么？"));
+    }
+    if (/^Welcome back, (.+)\. Where should we pick up\?$/.test(t)) {
+      return wrap(t.replace(/^Welcome back, (.+)\. Where should we pick up\?$/, "欢迎回来，$1。我们从哪里继续？"));
+    }
+    if (/^Good to see you, (.+)\. What's next\?$/.test(t)) {
+      return wrap(t.replace(/^Good to see you, (.+)\. What's next\?$/, "很高兴见到你，$1。接下来做什么？"));
+    }
+    if (/^Message queued\. (\d+) messages? in queue\.$/.test(t)) {
+      return wrap(t.replace(/^Message queued\. (\d+) messages? in queue\.$/, "消息已入队，当前队列中共有 $1 条消息。"));
+    }
+    if (/^Unnamed Agent (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Unnamed Agent (\d+)$/, "未命名智能体 $1"));
+    }
+    if (/^Unnamed skill (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Unnamed skill (\d+)$/, "未命名技能 $1"));
+    }
+    if (/^Rule (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Rule (\d+)$/, "规则 $1"));
+    }
+    if (/^Automation (\d+)$/.test(t)) {
+      return wrap(t.replace(/^Automation (\d+)$/, "自动化任务 $1"));
+    }
+    if (/^UI Extension (\d+)$/.test(t)) {
+      return wrap(t.replace(/^UI Extension (\d+)$/, "UI 扩展 $1"));
+    }
+    if (/^Connect an account for (.+) so the agent can run automations\.$/.test(t)) {
+      return wrap(t.replace(/^Connect an account for (.+) so the agent can run automations\.$/, "请为 $1 连接账号，以便智能体运行自动化任务。"));
+    }
+    if (/^Marked (\d+) conversations? as read$/.test(t)) {
+      return wrap(t.replace(/^Marked (\d+) conversations? as read$/, "已将 $1 个对话标记为已读"));
+    }
+    if (/^Sort and filter conversations \((\d+) active\)$/.test(t)) {
+      return wrap(t.replace(/^Sort and filter conversations \((\d+) active\)$/, "排序和筛选对话（$1 项生效中）"));
+    }
+    if (/^Filter skills and rules: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Filter skills and rules: (.+)$/, "筛选技能和规则：$1"));
+    }
+    if (/^Deleted "(.+)"\.$/.test(t)) {
+      return wrap(t.replace(/^Deleted "(.+)"\.$/, "已删除“$1”。"));
+    }
+    if (/^Enabled "(.+)"\.$/.test(t)) {
+      return wrap(t.replace(/^Enabled "(.+)"\.$/, "已启用“$1”。"));
+    }
+    if (/^Started "(.+)"\.$/.test(t)) {
+      return wrap(t.replace(/^Started "(.+)"\.$/, "已启动“$1”。"));
+    }
+    if (/^Restarted "(.+)"\.$/.test(t)) {
+      return wrap(t.replace(/^Restarted "(.+)"\.$/, "已重启“$1”。"));
+    }
+    if (/^Side Question: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Side Question: (.+)$/, "侧边提问：$1"));
+    }
+    if (/^Connected to (.+)$/.test(t)) {
+      return wrap(t.replace(/^Connected to (.+)$/, "已连接到 $1"));
+    }
+    if (/^Connecting to (.+)[….]*$/.test(t)) {
+      return wrap(t.replace(/^Connecting to (.+)[….]*$/, "正在连接到 $1…"));
+    }
+    if (/^Still thinking, (\d+) seconds?$/.test(t)) {
+      return wrap(t.replace(/^Still thinking, (\d+) seconds?$/, "仍在思考，已耗时 $1 秒"));
+    }
+    if (/^Waiting for command completion \(up to (\d+) seconds?\)$/.test(t)) {
+      return wrap(t.replace(/^Waiting for command completion \(up to (\d+) seconds?\)$/, "正在等待命令完成（最多 $1 秒）"));
+    }
+    if (/^Select (.+) Theme$/.test(t)) {
+      return wrap(t.replace(/^Select (.+) Theme$/, "选择 $1 主题"));
+    }
+    if (/^Plugins in (.+)$/.test(t)) {
+      return wrap(t.replace(/^Plugins in (.+)$/, "$1 中的插件"));
+    }
+    if (/^Search for "(.+)" in the Marketplace$/.test(t)) {
+      return wrap(t.replace(/^Search for "(.+)" in the Marketplace$/, "在市场中搜索“$1”"));
+    }
+    if (/^Available AI Credits: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Available AI Credits: (.+)$/, "可用 AI 额度：$1"));
+    }
+    if (/^This window's agents, files, and terminals are on (.+)\.$/.test(t)) {
+      return wrap(t.replace(/^This window's agents, files, and terminals are on (.+)\.$/, "当前窗口的智能体、文件与终端均位于 $1。"));
+    }
+    if (/^See (\d+) more$/.test(t)) {
+      return wrap(t.replace(/^See (\d+) more$/, "查看更多 ($1)"));
+    }
+    if (/^Downloads, (\d+)% complete$/.test(t)) {
+      return wrap(t.replace(/^Downloads, (\d+)% complete$/, "下载进度 $1%"));
+    }
+    if (/^Comment \((\d+)\)$/.test(t)) {
+      return wrap(t.replace(/^Comment \((\d+)\)$/, "批注 ($1)"));
+    }
+
     // --- 2.31.0 Side Questions, Quotas & Agent Team Dynamic Regex ---
     // 
     if (/^Show (\d+) more subagents?$/.test(t)) {
-      return text.replace(/^Show (\d+) more subagents?$/, "展开另外 $1 个子智能体");
+      return wrap(t.replace(/^Show (\d+) more subagents?$/, "展开另外 $1 个子智能体"));
     }
     // 
     if (/^\((\d+) subagents?\)$/.test(t)) {
-      return text.replace(/^\((\d+) subagents?\)$/, "($1 个子智能体)");
+      return wrap(t.replace(/^\((\d+) subagents?\)$/, "($1 个子智能体)"));
     }
     // 
     if (/^(\d+) subagents?$/.test(t)) {
-      return text.replace(/^(\d+) subagents?$/, "$1 个子智能体");
+      return wrap(t.replace(/^(\d+) subagents?$/, "$1 个子智能体"));
     }
     // 
     if (/^Open Subagent: (.+)$/.test(t)) {
-      return text.replace(/^Open Subagent: (.+)$/, "打开子智能体: $1");
+      return wrap(t.replace(/^Open Subagent: (.+)$/, "打开子智能体: $1"));
     }
     // 
     if (/^Messaging (.+)$/.test(t)) {
-      return text.replace(/^Messaging (.+)$/, "正在向 $1 发送消息");
+      return wrap(t.replace(/^Messaging (.+)$/, "正在向 $1 发送消息"));
     }
     // 
     if (/^Messaged (.+)$/.test(t)) {
-      return text.replace(/^Messaged (.+)$/, "已向 $1 发送消息");
+      return wrap(t.replace(/^Messaged (.+)$/, "已向 $1 发送消息"));
     }
     // 
     if (/^(.+?)\s+Pick a model to change it\.$/.test(t)) {
-      return text.replace(/^(.+?)\s+Pick a model to change it\.$/, "$1 请选择一个模型以修改它。");
+      return wrap(t.replace(/^(.+?)\s+Pick a model to change it\.$/, "$1 请选择一个模型以修改它。"));
     }
     // 
     if (/^Resets in <1m$/.test(t)) {
-      return text.replace(/^Resets in <1m$/, "< 1 分钟后重置");
+      return wrap(t.replace(/^Resets in <1m$/, "< 1 分钟后重置"));
     }
     // 
     if (/^Resets in (\d+)d (\d+)h$/.test(t)) {
-      return text.replace(/^Resets in (\d+)d (\d+)h$/, "$1 天 $2 小时后重置");
+      return wrap(t.replace(/^Resets in (\d+)d (\d+)h$/, "$1 天 $2 小时后重置"));
     }
     // 
     if (/^Resets in (\d+)d$/.test(t)) {
-      return text.replace(/^Resets in (\d+)d$/, "$1 天后重置");
+      return wrap(t.replace(/^Resets in (\d+)d$/, "$1 天后重置"));
     }
     // 
     if (/^Resets in (\d+)h (\d+)m$/.test(t)) {
-      return text.replace(/^Resets in (\d+)h (\d+)m$/, "$1 小时 $2 分钟后重置");
+      return wrap(t.replace(/^Resets in (\d+)h (\d+)m$/, "$1 小时 $2 分钟后重置"));
     }
     // 
     if (/^Resets in (\d+)h$/.test(t)) {
-      return text.replace(/^Resets in (\d+)h$/, "$1 小时后重置");
+      return wrap(t.replace(/^Resets in (\d+)h$/, "$1 小时后重置"));
     }
     // 
     if (/^Resets in (\d+)m$/.test(t)) {
-      return text.replace(/^Resets in (\d+)m$/, "$1 分钟后重置");
+      return wrap(t.replace(/^Resets in (\d+)m$/, "$1 分钟后重置"));
     }
     // 
     if (/^Select model, current: (.+)$/.test(t)) {
-      return text.replace(/^Select model, current: (.+)$/, "选择模型，当前: $1");
+      return wrap(t.replace(/^Select model, current: (.+)$/, "选择模型，当前: $1"));
     }
     // 
     if (/^Select model with (.+)$/.test(t)) {
-      return text.replace(/^Select model with (.+)$/, "选择包含 $1 的模型");
+      return wrap(t.replace(/^Select model with (.+)$/, "选择包含 $1 的模型"));
     }
     // 
     if (/^(\d+) Help · (\d+) Side Questions?$/.test(t)) {
-      return text.replace(/^(\d+) Help · (\d+) Side Questions?$/, "$1 项帮助 · $2 个侧边提问");
+      return wrap(t.replace(/^(\d+) Help · (\d+) Side Questions?$/, "$1 项帮助 · $2 个侧边提问"));
     }
     // 
     if (/^(\d+) Help$/.test(t)) {
-      return text.replace(/^(\d+) Help$/, "$1 项帮助");
+      return wrap(t.replace(/^(\d+) Help$/, "$1 项帮助"));
     }
     // 
     if (/^(\d+) Side Questions?$/.test(t)) {
-      return text.replace(/^(\d+) Side Questions?$/, "$1 个侧边提问");
+      return wrap(t.replace(/^(\d+) Side Questions?$/, "$1 个侧边提问"));
     }
     // 
     if (/^View (\d+) help(?: items?)? and (\d+) side questions?$/.test(t)) {
-      return text.replace(/^View (\d+) help(?: items?)? and (\d+) side questions?$/, "查看 $1 项帮助与 $2 个侧边提问");
+      return wrap(t.replace(/^View (\d+) help(?: items?)? and (\d+) side questions?$/, "查看 $1 项帮助与 $2 个侧边提问"));
     }
     // 
     if (/^View (\d+) help(?: items?)?$/.test(t)) {
-      return text.replace(/^View (\d+) help(?: items?)?$/, "查看 $1 项帮助");
+      return wrap(t.replace(/^View (\d+) help(?: items?)?$/, "查看 $1 项帮助"));
     }
     // 
     if (/^View (\d+) side questions?$/.test(t)) {
-      return text.replace(/^View (\d+) side questions?$/, "查看 $1 个侧边提问");
+      return wrap(t.replace(/^View (\d+) side questions?$/, "查看 $1 个侧边提问"));
     }
     // 
-    if (/^Delete side question: (.+)$/.test(t)) {
-      return text.replace(/^Delete side question: (.+)$/, "删除侧边提问: $1");
+    if (/^Delete side question: (.*)$/.test(t)) {
+      return wrap(t.replace(/^Delete side question: (.*)$/, "删除侧边提问: $1"));
     }
     // 
-    if (/^Side question failed: (.+)$/.test(t)) {
-      return text.replace(/^Side question failed: (.+)$/, "侧边提问失败: $1");
+    if (/^Side question failed: (.*)$/.test(t)) {
+      return wrap(t.replace(/^Side question failed: (.*)$/, "侧边提问失败: $1"));
     }
     // 
     if (/^Question (\d+) of (\d+)$/.test(t)) {
-      return text.replace(/^Question (\d+) of (\d+)$/, "第 $1 个问题，共 $2 个");
+      return wrap(t.replace(/^Question (\d+) of (\d+)$/, "第 $1 个问题，共 $2 个"));
     }
     // 
     if (/^Proceed with implementation plan and (\d+) comments?$/.test(t)) {
-      return text.replace(/^Proceed with implementation plan and (\d+) comments?$/, "按实施规划及 $1 条批注继续执行");
+      return wrap(t.replace(/^Proceed with implementation plan and (\d+) comments?$/, "按实施规划及 $1 条批注继续执行"));
     }
     // 
     if (/^Review (\d+) comments?$/.test(t)) {
-      return text.replace(/^Review (\d+) comments?$/, "查看 $1 条评论");
+      return wrap(t.replace(/^Review (\d+) comments?$/, "查看 $1 条评论"));
     }
     // 
     if (/^Proceed • (\d+)$/.test(t)) {
-      return text.replace(/^Proceed • (\d+)$/, "继续执行 • $1");
+      return wrap(t.replace(/^Proceed • (\d+)$/, "继续执行 • $1"));
     }
     // 
     if (/^(\d+) comments? in (.+)$/.test(t)) {
-      return text.replace(/^(\d+) comments? in (.+)$/, "$2 中的 $1 条批注");
+      return wrap(t.replace(/^(\d+) comments? in (.+)$/, "$2 中的 $1 条批注"));
     }
     // 
     if (/^Thought for (\d+)s$/.test(t)) {
-      return text.replace(/^Thought for (\d+)s$/, "已深度思考 $1 秒");
+      return wrap(t.replace(/^Thought for (\d+)s$/, "已深度思考 $1 秒"));
     }
     // 
     if (/^Thinking for (\d+)s$/.test(t)) {
-      return text.replace(/^Thinking for (\d+)s$/, "思考中 ($1 秒)");
+      return wrap(t.replace(/^Thinking for (\d+)s$/, "思考中 ($1 秒)"));
     }
     // 
     if (/^Select at most (\d+) items?$/.test(t)) {
-      return text.replace(/^Select at most (\d+) items?$/, "最多选择 $1 项");
+      return wrap(t.replace(/^Select at most (\d+) items?$/, "最多选择 $1 项"));
     }
     // 
     if (/^Running (.+)$/.test(t)) {
-      return text.replace(/^Running (.+)$/, "正在运行 $1");
+      return wrap(t.replace(/^Running (.+)$/, "正在运行 $1"));
     }
 
-    if (!text || typeof text !== 'string') return text;
-    const t = text.trim();
     // --- 2.30.0 Side Questions & Agent Team Dynamic Regex ---
-    // 实施规划审批带评论数量动态匹配
-    if (/^Proceed with implementation plan and (\d+) comments?$/.test(t)) {
-      return text.replace(/^Proceed with implementation plan and (\d+) comments?$/, "按实施规划及 $1 条批注继续执行");
-    }
-    // 产物评论数量动态折叠面板
-    if (/^Review (\d+) comments?$/.test(t)) {
-      return text.replace(/^Review (\d+) comments?$/, "查看 $1 条评论");
-    }
-    // 主输入框底部帮助与侧边提问聚合计数
-    if (/^(\d+) Help · (\d+) Side Questions?$/.test(t)) {
-      return text.replace(/^(\d+) Help · (\d+) Side Questions?$/, "$1 项帮助 · $2 个侧边提问");
-    }
-    // 主输入框底部帮助计数
-    if (/^(\d+) Help$/.test(t)) {
-      return text.replace(/^(\d+) Help$/, "$1 项帮助");
-    }
-    // 主输入框底部侧边提问计数
-    if (/^(\d+) Side Questions?$/.test(t)) {
-      return text.replace(/^(\d+) Side Questions?$/, "$1 个侧边提问");
-    }
-    // 侧边提问浮动按钮 tooltip 查看文本
-    if (/^View (\d+) help(?: items?)? and (\d+) side questions?$/.test(t)) {
-      return text.replace(/^View (\d+) help(?: items?)? and (\d+) side questions?$/, "查看 $1 项帮助与 $2 个侧边提问");
-    }
-    // 侧边提问浮动按钮 tooltip 单项查看文本
-    if (/^View (\d+) side questions?$/.test(t)) {
-      return text.replace(/^View (\d+) side questions?$/, "查看 $1 个侧边提问");
-    }
-    // 帮助浮动按钮 tooltip 单项查看文本
-    if (/^View (\d+) help(?: items?)?$/.test(t)) {
-      return text.replace(/^View (\d+) help(?: items?)?$/, "查看 $1 项帮助");
-    }
-    // 侧边提问历史切换器计数
-    if (/^Question (\d+) of (\d+)$/.test(t)) {
-      return text.replace(/^Question (\d+) of (\d+)$/, "第 $1 个问题（共 $2 个）");
-    }
-    // 概览面板子智能体折叠项更多数量
-    if (/^Show (\d+) more subagents?$/.test(t)) {
-      return text.replace(/^Show (\d+) more subagents?$/, "展开另外 $1 个子智能体");
-    }
     // 工作流列表折叠展开更多数量
     if (/^\+(\d+) more \(Show all\)$/.test(t)) {
-      return text.replace(/^\+(\d+) more \(Show all\)$/, "另外 +$1 项（展开全部）");
-    }
-    // 侧边提问运行错误动态通知
-    if (/^Side question failed: (.*)$/.test(t)) {
-      return text.replace(/^Side question failed: (.*)$/, "侧边提问失败：$1");
+      return wrap(t.replace(/^\+(\d+) more \(Show all\)$/, "另外 +$1 项（展开全部）"));
     }
     // 步骤轨迹中调用子智能体动态摘要
     if (/^Invoked subagent: (.*)$/.test(t)) {
-      return text.replace(/^Invoked subagent: (.*)$/, "已调用子智能体：$1");
+      return wrap(t.replace(/^Invoked subagent: (.*)$/, "已调用子智能体：$1"));
     }
     // 双击或回车重命名侧边提问 aria-label
     if (/^Edit side question title: (.*)$/.test(t)) {
-      return text.replace(/^Edit side question title: (.*)$/, "编辑侧边提问标题：$1");
-    }
-    // 侧边提问行悬停删除按钮 aria-label
-    if (/^Delete side question: (.*)$/.test(t)) {
-      return text.replace(/^Delete side question: (.*)$/, "删除侧边提问：$1");
+      return wrap(t.replace(/^Edit side question title: (.*)$/, "编辑侧边提问标题：$1"));
     }
 
     if (/^Exited with code (\d+)\.?$/.test(t)) {
-      return text.replace(/^Exited with code (\d+)\.?$/, "已退出，退出代码: $1。");
+      return wrap(t.replace(/^Exited with code (\d+)\.?$/, "已退出，退出代码: $1。"));
     }
     if (/^Ran command:\s*(.+)$/.test(t)) {
-      return text.replace(/^Ran command:\s*(.+)$/, "已运行命令: $1");
+      return wrap(t.replace(/^Ran command:\s*(.+)$/, "已运行命令: $1"));
     }
     if (/^Conflicts with \"([^\"]+)\" \(press Enter to replace\)$/.test(t)) {
-      return text.replace(/^Conflicts with \"([^\"]+)\" \(press Enter to replace\)$/, "与“$1”快捷键冲突 (按 Enter 覆盖替换)");
+      return wrap(t.replace(/^Conflicts with \"([^\"]+)\" \(press Enter to replace\)$/, "与“$1”快捷键冲突 (按 Enter 覆盖替换)"));
     }
     if (/^Conflict: also assigned to (.+)$/.test(t)) {
-      return text.replace(/^Conflict: also assigned to (.+)$/, "按键冲突：该快捷键同时已分配给 $1");
+      return wrap(t.replace(/^Conflict: also assigned to (.+)$/, "按键冲突：该快捷键同时已分配给 $1"));
     }
     if (/^Recording shortcut for (.+)\. Press keys to bind, Enter to save, Escape to cancel\.$/.test(t)) {
-      return text.replace(/^Recording shortcut for (.+)\. Press keys to bind, Enter to save, Escape to cancel\.$/, "正在为“$1”录制快捷键。按下组合键进行绑定，按 Enter 保存，按 Escape 取消。");
+      return wrap(t.replace(/^Recording shortcut for (.+)\. Press keys to bind, Enter to save, Escape to cancel\.$/, "正在为“$1”录制快捷键。按下组合键进行绑定，按 Enter 保存，按 Escape 取消。"));
     }
     if (/^Shortcut (.+) for (.+)$/.test(t)) {
-      return text.replace(/^Shortcut (.+) for (.+)$/, "“$2”的快捷键: $1");
+      return wrap(t.replace(/^Shortcut (.+) for (.+)$/, "“$2”的快捷键: $1"));
     }
     if (/^Remove shortcut (.+) for (.+)$/.test(t)) {
-      return text.replace(/^Remove shortcut (.+) for (.+)$/, "移除“$2”的快捷键 $1");
+      return wrap(t.replace(/^Remove shortcut (.+) for (.+)$/, "移除“$2”的快捷键 $1"));
     }
     if (/^Add shortcut for (.+)$/.test(t)) {
-      return text.replace(/^Add shortcut for (.+)$/, "为“$1”添加快捷键");
+      return wrap(t.replace(/^Add shortcut for (.+)$/, "为“$1”添加快捷键"));
     }
     if (/^Reset (.+) to default$/.test(t)) {
-      return text.replace(/^Reset (.+) to default$/, "将“$1”恢复为默认快捷键");
+      return wrap(t.replace(/^Reset (.+) to default$/, "将“$1”恢复为默认快捷键"));
     }
 
     // --- 1. 思考过程与耗时 ---
-    if (/^Thought for \d+s$/.test(t)) {
-      return text.replace(/^Thought for (\d+)s$/, "已深度思考 $1 秒");
-    }
-    if (/^Thinking for \d+s$/.test(t)) {
-      return text.replace(/^Thinking for (\d+)s$/, "思考中 ($1 秒)");
-    }
     if (/^Thought for \d+ seconds?$/.test(t)) {
-      return text.replace(/^Thought for (\d+) seconds?$/, "已思考 $1 秒");
+      return wrap(t.replace(/^Thought for (\d+) seconds?$/, "已思考 $1 秒"));
     }
     if (/^Worked for \d+[smhd]\.?$/.test(t)) {
-      return text.replace(/^Worked for (\d+)(s|m|h|d)\.?$/, (m, n, u) => {
+      return wrap(t.replace(/^Worked for (\d+)(s|m|h|d)\.?$/, (m, n, u) => {
         const units = { s: "秒", m: "分钟", h: "小时", d: "天" };
         return `耗时 ${n} ${units[u] || u}`;
-      });
+      }));
     }
     if (/^Turn \d+ of \d+$/.test(t)) {
-      return text.replace(/^Turn (\d+) of (\d+)$/, "第 $1 轮（共 $2 轮）");
+      return wrap(t.replace(/^Turn (\d+) of (\d+)$/, "第 $1 轮（共 $2 轮）"));
     }
     if (/^Load older messages, showing \d+ of \d+$/.test(t)) {
-      return text.replace(/^Load older messages, showing (\d+) of (\d+)$/, "加载更早消息（显示 $1/$2）");
+      return wrap(t.replace(/^Load older messages, showing (\d+) of (\d+)$/, "加载更早消息（显示 $1/$2）"));
     }
     if (/^See all \(\d+\)$/.test(t)) {
-      return text.replace(/^See all \((\d+)\)$/, "查看全部 ($1)");
+      return wrap(t.replace(/^See all \((\d+)\)$/, "查看全部 ($1)"));
     }
     if (/^\d+ files? changed$/.test(t)) {
-      return text.replace(/^(\d+) files? changed$/, "$1 个文件已更改");
+      return wrap(t.replace(/^(\d+) files? changed$/, "$1 个文件已更改"));
     }
     if (/^\d+(mo|[smhd])$/.test(t)) {
-      return text.replace(/^(\d+)(mo|[smhd])$/, (m, n, u) => {
+      return wrap(t.replace(/^(\d+)(mo|[smhd])$/, (m, n, u) => {
         const units = { s: "秒前", m: "分钟前", h: "小时前", d: "天前", mo: "个月前" };
         return `${n} ${units[u] || u}`;
-      });
+      }));
     }
     if (/^\d+(mo|[smhd]) ago$/.test(t)) {
-      return text.replace(/^(\d+)(mo|[smhd]) ago$/, (m, n, u) => {
+      return wrap(t.replace(/^(\d+)(mo|[smhd]) ago$/, (m, n, u) => {
         const units = { s: "秒", m: "分钟", h: "小时", d: "天", mo: "个月" };
         return `${n} ${units[u] || u}前`;
-      });
-    }
-    if (/^Select model, current: (.+)$/.test(t)) {
-      return text.replace(/^Select model, current: (.+)$/, "选择模型，当前为：$1");
+      }));
     }
     if (/^(\d+[smhd]) timer: (.+)$/.test(t)) {
-      return text.replace(/^(\d+[smhd]) timer: (.+)$/, "$1 定时器：$2");
+      return wrap(t.replace(/^(\d+[smhd]) timer: (.+)$/, "$1 定时器：$2"));
     }
 
     // --- 2. 产物与实施规划带评论计数 ---
     if (/^Proceed with implementation plan and \d+ comment(s)?/.test(t)) {
-      return text.replace(/^Proceed with implementation plan and (\d+) comment(s)?/, "继续执行实施规划并附带 $1 条批注");
+      return wrap(t.replace(/^Proceed with implementation plan and (\d+) comment(s)?/, "继续执行实施规划并附带 $1 条批注"));
     }
     if (/^Proceed with implementation plan and \d+/.test(t)) {
-      return text.replace(/^Proceed with implementation plan and (\d+)/, "按实施规划及另外 $1 项继续执行");
+      return wrap(t.replace(/^Proceed with implementation plan and (\d+)/, "按实施规划及另外 $1 项继续执行"));
     }
     if (/^Proceed with Plan/.test(t)) {
-      return text.replace(/^Proceed with Plan/, "按规划继续执行");
+      return wrap(t.replace(/^Proceed with Plan/, "按规划继续执行"));
     }
 
     // --- 3. 子智能体计数与带参调用 ---
     if (/^Child Subagents \(\d+\)$/.test(t)) {
-      return text.replace(/^Child Subagents \((\d+)\)$/, "子级智能体 ($1)");
+      return wrap(t.replace(/^Child Subagents \((\d+)\)$/, "子级智能体 ($1)"));
     }
     if (/^\d+ Child Subagents?$/.test(t)) {
-      return text.replace(/^(\d+) Child Subagents?$/, "$1 个子智能体");
-    }
-    if (/^Invoked subagent:\s*(.+)$/.test(t)) {
-      return text.replace(/^Invoked subagent:\s*(.+)$/, "已调用子智能体: $1");
+      return wrap(t.replace(/^(\d+) Child Subagents?$/, "$1 个子智能体"));
     }
     if (/^subagent of "(.+)"$/.test(t)) {
-      return text.replace(/^subagent of "(.+)"$/, "隶属于 \"$1\" 的子智能体");
+      return wrap(t.replace(/^subagent of "(.+)"$/, "隶属于 \"$1\" 的子智能体"));
     }
 
     // --- 4. 退出状态与进程代码 ---
     if (/^Process exited with code \d+\.?$/.test(t)) {
-      return text.replace(/^Process exited with code (\d+)\.?$/, "进程已退出，退出代码：$1");
+      return wrap(t.replace(/^Process exited with code (\d+)\.?$/, "进程已退出，退出代码：$1"));
     }
     if (/^Failed with exit code:? \d+\.?$/.test(t)) {
-      return text.replace(/^Failed with exit code:? (\d+)\.?$/, "执行失败，退出代码：$1");
+      return wrap(t.replace(/^Failed with exit code:? (\d+)\.?$/, "执行失败，退出代码：$1"));
     }
 
     // --- 5. 上下文与时间线截断 ---
     if (/^\d+ (?:earlier|later) steps are not loaded/.test(t)) {
-      return text.replace(/^(\d+) (?:earlier|later) steps are not loaded, so they are not on the timeline\. Scroll the step grid in the Context Window tab to load them\.$/, "$1 个较早/较晚的步骤尚未加载，因此未在时间线上显示。请在“上下文窗口”选项卡中滚动步骤网格进行加载。");
+      return wrap(t.replace(/^(\d+) (?:earlier|later) steps are not loaded, so they are not on the timeline\. Scroll the step grid in the Context Window tab to load them\.$/, "$1 个较早/较晚的步骤尚未加载，因此未在时间线上显示。请在“上下文窗口”选项卡中滚动步骤网格进行加载。"));
     }
 
     // --- 6. 权限询问与始终允许目标 ---
     if (/^Yes, and always allow '([^']+)' in this conversation$/.test(t)) {
-      return text.replace(/^Yes, and always allow '([^']+)' in this conversation$/, "允许，并在当前会话中始终允许“$1”");
+      return wrap(t.replace(/^Yes, and always allow '([^']+)' in this conversation$/, "允许，并在当前会话中始终允许“$1”"));
     }
     if (/^Save rule to always allow (.+)\?$/.test(t)) {
-      return text.replace(/^Save rule to always allow (.+)\?$/, "是否保存规则以始终允许 $1？");
+      return wrap(t.replace(/^Save rule to always allow (.+)\?$/, "是否保存规则以始终允许 $1？"));
     }
     if (/^Allow (.+)\?$/.test(t)) {
-      return text.replace(/^Allow (.+)\?$/, "是否允许 $1？");
+      return wrap(t.replace(/^Allow (.+)\?$/, "是否允许 $1？"));
     }
 
     // --- 7. MCP 与工具动态标题 ---
     if (/^The (.+) MCP server requires configuration parameters before it can be started\.$/.test(t)) {
-      return text.replace(/^The (.+) MCP server requires configuration parameters before it can be started\.$/, "MCP 服务器“$1”需要先完善配置参数才能启动。");
+      return wrap(t.replace(/^The (.+) MCP server requires configuration parameters before it can be started\.$/, "MCP 服务器“$1”需要先完善配置参数才能启动。"));
     }
     if (/^Configure (.+)$/.test(t) && !t.includes("Settings") && !t.includes("the")) {
-      return text.replace(/^Configure (.+)$/, "配置 $1");
+      return wrap(t.replace(/^Configure (.+)$/, "配置 $1"));
     }
 
     // --- 8. 外观与主题低对比度告警 ---
     if (/^Low contrast ratio \(([\d.]+):1\)\. Text may be hard to read\.$/.test(t)) {
-      return text.replace(/^Low contrast ratio \(([\d.]+):1\)\. Text may be hard to read\.$/, "色彩对比度过低 ($1:1)，文字可能难以辨识。");
+      return wrap(t.replace(/^Low contrast ratio \(([\d.]+):1\)\. Text may be hard to read\.$/, "色彩对比度过低 ($1:1)，文字可能难以辨识。"));
     }
 
     return text;
   };
 
   const translateText = (text) => {
-    text = translateDynamicRegex(text);
+      if (!text || typeof text !== 'string') return text;
       let t = text.trim();
+      if (!t) return text;
       if (dynamicDict[t]) return text.replace(t, dynamicDict[t]);
+      const regexTranslated = translateDynamicRegex(text);
+      if (regexTranslated !== text) return regexTranslated;
       
       // 兼容带有下拉箭头的 Advanced Settings
       if (t.startsWith("Advanced Settings")) {
@@ -5558,12 +6515,17 @@ def main():
   // 判断是否为流式对话、代码块或输入框等高频突变区域，避让这些区域以防破坏 React 虚拟 DOM
   const isDynamicContentZone = (node) => {
     try {
-      let el = node.nodeType === 1 ? node : node.parentElement;
+      let el = node && node.nodeType === 1 ? node : node && node.parentElement;
       while (el && el !== document.body) {
-        const cls = (el.className || '').toString().toLowerCase();
+        if (el.nodeType !== 1) { el = el.parentElement; continue; }
+        const rawCls = typeof el.className === 'string'
+          ? el.className
+          : (typeof el.getAttribute === 'function' ? (el.getAttribute('class') || '') : (el.className && el.className.baseVal) || '');
+        const cls = rawCls.toLowerCase();
         const id = (el.id || '').toString().toLowerCase();
         const tagName = (el.tagName || '').toLowerCase();
-        // 任何处于可编辑、代码、终端、会话、历史、正文区域的节点一律豁免
+        const testId = (typeof el.getAttribute === 'function' ? (el.getAttribute('data-testid') || '') : '').toLowerCase();
+        // 任何处于可编辑、代码、终端、会话、历史、正文、数学公式或 Notebook 区域的节点一律豁免
         if (
           el.isContentEditable ||
           tagName === 'textarea' ||
@@ -5589,6 +6551,18 @@ def main():
           cls.includes('xterm') ||
           cls.includes('cm-') ||
           cls.includes('step') ||
+          cls.includes('katex') ||
+          cls.includes('prism') ||
+          cls.includes('code-block') ||
+          cls.includes('code-line') ||
+          cls.includes('notebook-') ||
+          testId === 'code-gutter' ||
+          testId === 'code-gutter-diff' ||
+          testId === 'agent-response' ||
+          testId === 'browser-subagent-thinking' ||
+          testId === 'browser-subagent-step' ||
+          testId === 'browser-subagent-steps' ||
+          testId === 'notebook-viewer' ||
           id.includes('chat') ||
           id.includes('conversation') ||
           id.includes('cascade') ||
@@ -5731,16 +6705,41 @@ def main():
         print("[!] Warning: slash component pattern not found in bundle!")
 
     # ---------------- 注入设置侧边栏原生中文 label ----------------
-    zh_ogb = 'var __OGB__=[{screen:"General",label:"常规设置"},{screen:"Projects",label:"项目设置"},{screen:"Environments",label:"环境配置"},{screen:"App",label:"应用设置"},{screen:"Appearance",label:"外观与主题"},{screen:"Shortcuts",label:"快捷键设置"},{screen:"Notifications",label:"通知与提醒"},{screen:"Models",label:"模型管理"},{screen:"Customizations",label:"自定义扩展"},{screen:"Browser",label:"浏览器设置"},{screen:"Developer",label:"开发者选项"},{screen:"Running",label:"后台运行项"},{screen:"Jetski Chat",label:"对话流配置"}]'
-    # 匹配可能包含英文或已汉化标签的 ogb
-    # 变量名每版都会变（2.24 ogb / 2.25 Cgb / 2.30 eBb / 2.31 LBb），按结构动态定位
-    ogb_pattern = r'var ([\w$]+)=\[\{screen:"General"\}[^\]]{0,1500}?(?:\{screen:"Jetski Chat"\}|\{screen:"Regroup Google3 Chats"\})\]'
-    _om = re.search(ogb_pattern, content)
+    OGB_SCREEN_LABELS = {
+        "General": "常规设置",
+        "Projects": "项目设置",
+        "Agents": "智能体设置",
+        "Environments": "环境配置",
+        "App": "应用设置",
+        "Appearance": "外观与主题",
+        "Shortcuts": "快捷键设置",
+        "Notifications": "通知与提醒",
+        "Models": "模型管理",
+        "Customizations": "自定义扩展",
+        "Browser": "浏览器设置",
+        "Developer": "开发者选项",
+        "Running": "后台运行项",
+        "Jetski Chat": "对话流配置",
+        "Regroup Google3 Chats": "重分组 Google3 对话",
+    }
+    # 变量名每版都会变（2.24 ogb / 2.25 Cgb / 2.30 eBb / 2.31 LBb / 2.32.2 fEb），按结构动态定位并逐项非破坏性注入
+    ogb_pattern = r'var ([\w$]+)=(\[\{\s*screen\s*:\s*["\']General["\']\s*\}[^\]]{0,2500}\])'
+    _om = next((m for m in re.finditer(ogb_pattern, content) if "Appearance" in m.group(2)), None)
     if os.environ.get("CHM_NO_INJECT"):
         pass
     elif _om:
-        content = content[:_om.start()] + zh_ogb.replace("__OGB__", _om.group(1)) + content[_om.end():]
-        print("Successfully injected localized labels into ogb settings array via regex!")
+        _ogb_var, _ogb_body = _om.group(1), _om.group(2)
+        _item_pat = re.compile(r'\{\s*screen\s*:\s*(["\'])([^"\']+)\1(?:\s*,\s*label\s*:\s*(["\'])([^"\']*)\3)?\s*\}')
+
+        def _rewrite_ogb_item(im):
+            q, scr = im.group(1), im.group(2)
+            if scr in OGB_SCREEN_LABELS:
+                return f'{{screen:{q}{scr}{q},label:"{OGB_SCREEN_LABELS[scr]}"}}'
+            return im.group(0)
+
+        _new_body = _item_pat.sub(_rewrite_ogb_item, _ogb_body)
+        content = content[:_om.start()] + f"var {_ogb_var}={_new_body}" + content[_om.end():]
+        print("Successfully injected localized labels into ogb settings array via non-destructive regex!")
     else:
         print("[!] Warning: ogb_pattern not found in bundle!")
 
