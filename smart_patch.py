@@ -74,20 +74,24 @@ def check_antigravity_process(system_name):
     """温和检测 Antigravity 进程是否仍在运行，绝不执行强杀操作。"""
     if system_name != "Windows":
         return
-    try:
-        chk_process = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq Antigravity.exe"],
-            capture_output=True,
-            text=True,
-            errors="replace",
-        )
-    except OSError:
-        return
-    if "Antigravity.exe" in (chk_process.stdout or ""):
+    while True:
+        try:
+            chk_process = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq Antigravity.exe"],
+                capture_output=True,
+                text=True,
+                errors="replace",
+            )
+        except OSError:
+            return
+        if "Antigravity.exe" not in (chk_process.stdout or ""):
+            return
         log("⚠️ 检测到 Antigravity 正在运行中！")
-        log("为防止文件占用被锁定导致闪退，请先完全退出 Antigravity 软件。")
-        if sys.stdin.isatty():
-            input("退出软件后，按回车键 [Enter] 继续注入流程...")
+        log("为防止 app.asar 文件占用锁定导致失败或闪退，请先手动完全退出 Antigravity 软件（包括系统托盘驻留进程）。")
+        if not sys.stdin.isatty():
+            log("当前为非交互终端，请先手动关闭 Antigravity 后再重新运行 smart_patch.py。")
+            return
+        input("确认软件已完全退出后，按回车键 [Enter] 重新检测并继续...")
 
 
 def patch_install(

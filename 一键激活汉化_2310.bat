@@ -1,10 +1,10 @@
 @echo off
-chcp 936 >nul
-title ±äÉ«Áú Antigravity 2.31.0 ÖÕ¼«ÖÇÄÜ¼¤»îÆ÷
+chcp 65001 >nul
+title å˜è‰²é¾™ Antigravity 2.31.0 ç»ˆæžæ™ºèƒ½æ¿€æ´»å™¨
 
 echo ========================================================
-echo         ±äÉ«Áú (Project Chameleon) Antigravity 2.31.0
-echo                 ¼«ËÙÖÇÄÜºº»¯¼¤»î³ÌÐò
+echo         å˜è‰²é¾™ (Project Chameleon) Antigravity 2.31.0
+echo                 æžé€Ÿæ™ºèƒ½æ±‰åŒ–æ¿€æ´»ç¨‹åº
 echo ========================================================
 echo.
 
@@ -15,52 +15,53 @@ set UNPACKED=%RES_DIR%\app.asar.unpacked
 set TMP_UNPACKED=%RES_DIR%\app.asar.tmp.unpacked
 set APP_EXE=%LOCALAPPDATA%\Programs\antigravity\Antigravity.exe
 
-:: ¼ì²éÊÇ·ñ´æÔÚÔËÐÐÖÐ»òºóÌ¨×¤Áô½ø³Ì
+:: æ£€æŸ¥æ˜¯å¦å­˜åœ¨è¿è¡Œä¸­æˆ–åŽå°é©»ç•™è¿›ç¨‹ï¼ˆçº¯æ‰‹åŠ¨æŽ§åˆ¶ï¼Œä¸¥ç¦å¼ºæ€ï¼‰
+:check_running
 tasklist /FI "IMAGENAME eq Antigravity.exe" 2>NUL | find /I /N "Antigravity.exe">NUL
 if "%ERRORLEVEL%"=="0" (
-    echo [ÌáÊ¾] ¼ì²âµ½ Antigravity ´°¿ÚÒÑ¹Ø±Õ£¬µ«ºóÌ¨ÈÔÓÐÍÐÅÌ»òäÖÈ¾½ø³Ì×¤Áô¡£
+    echo [æç¤º] æ£€æµ‹åˆ° Antigravity.exe æ­£åœ¨è¿è¡Œä¸­ï¼Œè¯·å…ˆæ‰‹åŠ¨å®Œå…¨é€€å‡º Antigravity è½¯ä»¶ã€‚
+    echo é€€å‡ºè½¯ä»¶åŽï¼ŒæŒ‰ä»»æ„é”®é‡æ–°æ£€æµ‹å¹¶ç»§ç»­...
     echo.
-    echo ÕýÔÚÎªÄú×Ô¶¯°²È«ÇåÀíºóÌ¨×¤Áô½ø³Ì£¬ÇëÉÔºò...
-    taskkill /F /IM "Antigravity.exe" /T >nul 2>nul
-    timeout /t 1 /nobreak >nul
+    pause >nul
+    goto check_running
 )
 
 echo.
-echo [1/3] ÕýÔÚÓ¦ÓÃ 2.31.0 Ð­Òé×¢ÈëºËÐÄ...
+echo [1/3] æ­£åœ¨åº”ç”¨ 2.31.0 åè®®æ³¨å…¥æ ¸å¿ƒ...
 if exist "%TMP_ASAR%" (
     move /Y "%TMP_ASAR%" "%ASAR%" >nul
     if errorlevel 1 (
-        echo [´íÎó] Ìæ»» app.asar Ê§°Ü£¬Çë¼ì²éÎÄ¼þÊÇ·ñ±»ÆäËû³ÌÐòÕ¼ÓÃ¡£
+        echo [é”™è¯¯] æ›¿æ¢ app.asar å¤±è´¥ï¼Œè¯·æ£€æŸ¥æ–‡ä»¶æ˜¯å¦è¢«å…¶ä»–ç¨‹åºå ç”¨ã€‚
         pause
         exit /b 1
     ) else (
-        echo [OK] app.asar Ð­Òé×¢ÈëºËÐÄÌæ»»³É¹¦£¡
+        echo [OK] app.asar åè®®æ³¨å…¥æ ¸å¿ƒæ›¿æ¢æˆåŠŸï¼
     )
 ) else (
-    echo [OK] app.asar ÒÑ¾­ÊÇ´òºÃ²¹¶¡µÄ×´Ì¬¡£
+    echo [OK] app.asar å·²ç»æ˜¯æ‰“å¥½è¡¥ä¸çš„çŠ¶æ€ã€‚
 )
 
-echo [2/3] ÕýÔÚÍ¬²½½â°ü×ÊÔ´...
+echo [2/3] æ­£åœ¨åŒæ­¥è§£åŒ…èµ„æº...
 if exist "%TMP_UNPACKED%" (
     if exist "%UNPACKED%" rd /s /q "%UNPACKED%" >nul 2>nul
     move /Y "%TMP_UNPACKED%" "%UNPACKED%" >nul
-    echo [OK] ½â°ü×ÊÔ´ÒÑÍ¬²½£¡
+    echo [OK] è§£åŒ…èµ„æºå·²åŒæ­¥ï¼
 )
 
-echo [3/3] ÕýÔÚÐ£ÑéÏµÍ³ºº»¯»º´æ...
+echo [3/3] æ­£åœ¨æ ¡éªŒç³»ç»Ÿæ±‰åŒ–ç¼“å­˜...
 if exist "%APPDATA%\Antigravity\zh_cn_ui_main.js" (
-    echo [OK] 2.31.0 ºº»¯È«Á¿ UI °üÒÑ¾ÍÐ÷ (12.03 MB)¡£
+    echo [OK] 2.31.0 æ±‰åŒ–å…¨é‡ UI åŒ…å·²å°±ç»ª: %APPDATA%\Antigravity\zh_cn_ui_main.js
 ) else (
-    echo [¸üÐÂ] ÕýÔÚÍ¬²½ zh_cn_ui_main.js µ½»º´æÄ¿Â¼...
+    echo [æ›´æ–°] æ­£åœ¨åŒæ­¥ zh_cn_ui_main.js åˆ°ç¼“å­˜ç›®å½•...
     copy /Y "translations\zh_cn_ui_main.js" "%APPDATA%\Antigravity\zh_cn_ui_main.js" >nul
 )
 
 echo.
 echo ========================================================
-echo  ¹§Ï²£¡Antigravity 2.31.0 È«Á¿ºº»¯ÒÑ 100%% ¼¤»îÍê³É£¡
+echo  æ­å–œï¼Antigravity 2.31.0 å…¨é‡æ±‰åŒ–å·² 100%% æ¿€æ´»å®Œæˆï¼
 echo ========================================================
 echo.
-echo °´ÈÎÒâ¼üÁ¢¼´Æô¶¯È«ÐÂÖÐÎÄ°æ Antigravity ...
+echo æŒ‰ä»»æ„é”®ç«‹å³å¯åŠ¨å…¨æ–°ä¸­æ–‡ç‰ˆ Antigravity ...
 pause >nul
 
 if exist "%APP_EXE%" (

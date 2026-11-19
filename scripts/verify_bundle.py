@@ -22,7 +22,7 @@ SENS_KEYS = (
     "topic|targetScreen|activeScreen|modalType|home|unsandboxed|binding|shortcut|command|when|"
     "scheme|protocol|extension|package|module|file|path|convoState|itemType|nodeType|blockType|"
     "entryType|viewType|paneType|argName|param|option|flag|groupKey|displayName|stateMachine|"
-    "conversationId|cascadeId|sectionId|screenId|viewId|tabId|paneId|itemId|addr|preset"
+    "conversationId|cascadeId|sectionId|screenId|viewId|tabId|paneId|itemId|addr|preset|blockedReason"
 )
 
 CHECKS = [

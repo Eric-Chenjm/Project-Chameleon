@@ -71,6 +71,8 @@ BLOCK_PROTECT_PATTERNS = [
     (r'\[\s*' + _JS_STR_D + r'\s*,\s*\{\s*key\s*:\s*' + _JS_STR_D + r'\s*,\s*code\s*:\s*' + _JS_STR_D + r'\s*,\s*vk\s*:\s*\d+\s*\}\s*\]', "Keymap按键条目"),
     # 11) 主题预设回退对象（如 H6b: {light:[...],dark:[...]}）
     (r'\{\s*light\s*:\s*\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*,\s*dark\s*:\s*\[(?:' + _STR_ITEM + r',)*' + _STR_ITEM + r'\]\s*\}', "主题预设回退对象"),
+    # 12) Lexical 声明式快捷键工厂（如 2.33.0 Epb(): 锚定 onMatch: + return[...,a("ArrowRight",...)]，不依赖混淆函数名）
+    (r'(?:\bfunction\s+[\w$]+\s*\(\s*\)|(?:var|const|let)\s+[\w$]+\s*=\s*\(\s*\)\s*=>)\s*\{(?:(?!\bfunction\b)[\s\S]){0,900}?\bonMatch\s*:(?:(?!\bfunction\b)[\s\S]){0,2800}?\breturn\s*\[(?:(?!\bfunction\b)[\s\S]){0,300}?"ArrowRight"(?:(?!\bfunction\b)[\s\S]){0,2800}?\]\s*\}', "Lexical快捷键工厂"),
 ]
 
 PROTECT_PATTERNS = [
@@ -91,9 +93,9 @@ PROTECT_PATTERNS = [
     (r'(\.(?:' + _PROTECT_KEYS + r')\s*=\s*)(' + _STR_S + r')', "点属性赋值"),
     # 3.2) HTML data-* 属性：data-screen:"Developer"、data-testid:"..."
     (r'("(?:data-screen|data-testid|data-tooltip-id|data-state|data-value|data-key|data-mode)"\s*:\s*)(' + _STR_D + r')', "data属性"),
-    # 4) 对象键 / 映射表键（键本身用于查找，值才是文案）
-    (r'((?:\{|,)\s*)(' + _STR_D + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))', "对象键"),
-    (r'((?:\{|,)\s*)(' + _STR_S + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))', "对象键"),
+    # 4) 对象键 / 映射表键（键本身用于查找，值才是文案；排除已知安全 UI 属性键如 "aria-label" 以便静态属性规则命中）
+    (r'((?:\{|,)\s*)(?!"(?:aria-label|label|title|placeholder|description|tooltip|subtitle|heading)"\s*:)(' + _STR_D + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))', "对象键"),
+    (r'((?:\{|,)\s*)(?!\'(?:aria-label|label|title|placeholder|description|tooltip|subtitle|heading)\'\s*:)(' + _STR_S + r')(?=\s*:\s*(?:"|\[|\{|-?\d|true|false|null))', "对象键"),
     # 5) Protobuf 枚举反向映射：a[a.UNSPECIFIED = 0] = "UNSPECIFIED"
     (r'(\[\s*[A-Za-z0-9_$.]+(?:\.[A-Za-z0-9_]+)?(?:\s*=\s*\d+)?\s*\]\s*=\s*)(' + _STR_D + r')', "Protobuf反向枚举"),
     (r'(\[\s*[A-Za-z0-9_$.]+(?:\.[A-Za-z0-9_]+)?(?:\s*=\s*\d+)?\s*\]\s*=\s*)(' + _STR_S + r')', "Protobuf反向枚举"),
@@ -110,9 +112,9 @@ PROTECT_PATTERNS = [
     (r'(new\s*Map\s*\(\s*\[\s*\[\s*)(' + _STR_D + r')(?=\s*,\s*\{\s*sections\s*:)', "设置Map首Key"),
     (r'(\]\s*,\s*\[\s*)(' + _STR_D + r')(?=\s*,\s*\{\s*sections\s*:)', "设置Map配置Key"),
     (r'(,\s*\[\s*)("Appearance"|"General"|"Project 4K"|"Browser"|"Account"|"Customizations"|"Notifications"|"Shortcuts")(?=\s*,)', "设置Map配置Key"),
-    # 9.1) 查找/集合/存储/编码类调用的实参一律视为程序标识
-    (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_D + r')(?=\s*[,)])', "查找调用实参"),
-    (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _STR_S + r')(?=\s*[,)])', "查找调用实参"),
+    # 9.1) 查找/集合/存储/编码类调用的实参一律视为程序标识（支持转义字符串如 startsWith("Side question (conversation ")）
+    (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _JS_STR_D + r')(?=\s*[,)])', "查找调用实参"),
+    (r'(\.(?:get|set|has|delete|includes|indexOf|startsWith|endsWith|getItem|setItem|removeItem)\(\s*)(' + _JS_STR_S + r')(?=\s*[,)])', "查找调用实参"),
     (r'(\bencodeURIComponent\(\s*)(' + _STR_D + r')(?=\s*\))', "URL编码实参"),
     # 10) 时间轴步骤坐标映射表
     (r'(,\s*\[\s*)("CHECKPOINT")(?=\s*,\s*\d+\s*\])', "时间轴步骤枚举"),
@@ -154,7 +156,10 @@ def detect_field_accessor(content):
 
 
 def detect_key_checker(content):
-    """识别按键判定的底层辅助函数名（如 2.25 LG / 2.26 bH / 2.27 uL）。"""
+    """识别按键判定的底层辅助函数名（如 2.25 LG / 2.26 bH / 2.27 uL / 2.31.2 HK）。
+    2.33.0+ Lexical 已迁移为声明式 onMatch 快捷键工厂（由 BLOCK_PROTECT_PATTERNS 整块保护），
+    不存在全局函数时返回 None，绝不误匹配局部短名或强行回退到无关的 LG。
+    """
     pos = 0
     while True:
         idx = content.find('"Backspace"', pos)
@@ -166,11 +171,13 @@ def detect_key_checker(content):
         km = re.search(r"""([a-zA-Z0-9_$]+)\s*\(\s*([a-zA-Z0-9_$]+)\s*,\s*["']Backspace["']\s*,""", snippet)
         if km:
             fn = km.group(1)
-            print(f"Detected key checker: {fn}")
-            return fn
+            # 排除局部单字符工厂函数或测试短名误匹配
+            if len(fn) >= 2 and "onMatch:" not in content[max(0, idx - 400):min(len(content), idx + 200)]:
+                print(f"Detected key checker: {fn}")
+                return fn
         pos = idx + 11
-    print("Detected key checker fallback: LG")
-    return "LG"
+    print("Detected key checker: none (declarative shortcut factory)")
+    return None
 
 
 def protect_code_positions(content):
@@ -217,7 +224,8 @@ def protect_code_positions(content):
     alias_patterns.append((r'(\b' + re.escape(acc) + r'\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*\))', "字段提取实参"))
 
     kc = detect_key_checker(content)
-    alias_patterns.append((r'(\b' + re.escape(kc) + r'\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*,)', "快捷键绑定实参"))
+    if kc:
+        alias_patterns.append((r'(\b' + re.escape(kc) + r'\(\s*[\w$]+\s*,\s*)(' + _STR_D + r')(?=\s*,)', "快捷键绑定实参"))
 
     for pattern, label in PROTECT_PATTERNS + alias_patterns:
         content = re.sub(pattern, _make_sub(label), content)
@@ -238,7 +246,7 @@ def restore_protected(content, placeholders):
     return content
 
 
-_ATTR_PREFIX_RE = re.compile(r'^(label|title|aria-label|text|placeholder|description|tooltip|layout|heading|subtitle|emptyText):(.*)$', re.S)
+_ATTR_PREFIX_RE = re.compile(r'^(label|title|aria-label|text|placeholder|description|tooltip|layout|heading|subtitle|emptyText|qrAriaLabel):(.*)$', re.S)
 
 
 def apply_string_translation(content, original, translated):
@@ -281,6 +289,12 @@ def apply_string_translation(content, original, translated):
             return content.replace(alt_o, alt_t), True
         return content, False
 
+    # 2C. 反引号模板字符串前缀片段（如 `Honors standard VS Code shortcuts without collisions (e.g. ${，最短合法键为 19 字符的 `Conflicts with "${）
+    if original.startswith("`") and "${" in original and len(original) >= 18:
+        if original in content:
+            return content.replace(original, translated), True
+        return content, False
+
     # 3. 严格字面量安全替换：必须匹配被引号包裹的形式，严禁做裸词子串替换
     if original not in content:
         return content, False
@@ -305,8 +319,8 @@ def apply_string_translation(content, original, translated):
         content = content.replace(src_escaped_d, dst_escaped_d)
         replaced = True
 
-    # 4. 对于完整的多词长句（长度 >= 25 且必须包含空格），允许在纯文本模板中替换
-    if not replaced and len(original) >= 25 and (' ' in original):
+    # 4. 对于完整的多词长句（长度 >= 25 且必须包含空格）或含多段字面量的复合列表，允许在纯文本模板中替换
+    if not replaced and len(original) >= 25 and ((' ' in original) or original.count('"') >= 4):
         if original in content:
             content = content.replace(original, translated)
             replaced = True
@@ -979,7 +993,6 @@ def main():
         "Allow/deny specific terminal commands.": "精细化配置特定终端命令的允许/阻止规则。",
         "Your Plan: ": "当前套餐：",
         "Upgrade": "升级套餐",
-        "Manage": "管理方案",
         "Available AI Credits: ": "可用 AI 积分：",
         "Shared with: ": "共享配额模型：",
         "Baseline model quota reached": "已达到基础模型的免费调用配额上限",
@@ -3600,6 +3613,7 @@ def main():
         "title:\"Modified Files\"": "title:\"修改的文件\"",
         "label:\"Plan Review Policy\"": "label:\"规划评审策略\"",
         "title:\"Add inline comment\"": "title:\"添加行内批注\"",
+        "placeholder:h=\"Leave a comment\",submitLabel:k=\"Add Comment\"": "placeholder:h=\"留下批注\",submitLabel:k=\"添加批注\"",
         "Leave a comment": "添加批注",
         "submitLabel:\"Add Comment\"": "submitLabel:\"添加评论\"",
         "tooltip:\"View Stacked Diff\"": "tooltip:\"查看堆叠对比\"",
@@ -3883,7 +3897,7 @@ def main():
         "label:\"Browsing History\"": "label:\"浏览历史记录\"",
         "label:\"No matching flags\"": "label:\"无匹配的实验标志\"",
         "label:\"Sign in again\"": "label:\"重新登录\"",
-        "label:\"Custom\\\\u2026\"": "label:\"自定义…\"",
+        "label:\"Custom\\u2026\"": "label:\"自定义…\"",
         "label:\"Workspace URI query parameter\"": "label:\"工作区 URI 查询参数\"",
         "placeholder:\"Select or enter a workspace URI\"": "placeholder:\"选择或输入工作区 URI\"",
         "aria-label:\"Workspace URI to switch to\"": "aria-label:\"要切换的工作区 URI\"",
@@ -3938,8 +3952,8 @@ def main():
         "label:\"Browser downloads\"": "label:\"浏览器下载\"",
         "title:\"Capture Screenshot\"": "title:\"截取屏幕截图\"",
         "title:\"Mention Page\"": "title:\"提及当前网页\"",
-        "title:\"This site can\\\\u2019t be reached\"": "title:\"无法访问此网站\"",
-        "title:\"This page isn\\\\u2019t working\"": "title:\"此网页无法正常运作\"",
+        "title:\"This site can\\u2019t be reached\"": "title:\"无法访问此网站\"",
+        "title:\"This page isn\\u2019t working\"": "title:\"此网页无法正常运作\"",
         "description:\"You should not enter any sensitive information on this site (for example, passwords or credit cards), because it could be stolen by attackers.\"": "description:\"请勿在此网站上输入任何敏感信息（例如密码或信用卡号），因为这些信息可能会被攻击者窃取。\"",
         "description:\"Attackers might be able to see the images you're looking at on this site and trick you by modifying them.\"": "description:\"攻击者可能会看到您在此网站上查看的图片，并通过篡改图片进行欺骗。\"",
         "title:\"Connectors\"": "title:\"连接器 (Connectors)\"",
@@ -4051,8 +4065,8 @@ def main():
         "title:\"Group By\"": "title:\"分组方式\"",
         "title:\"Display\"": "title:\"显示设置\"",
         "label:\"Complete Onboarding Step\"": "label:\"完成引导步骤\"",
-        "label:\"Starting the conversation\\\\u2026\"": "label:\"正在启动对话…\"",
-        "label:\"Resolving link\\\\u2026\"": "label:\"正在解析链接…\"",
+        "label:\"Starting the conversation\\u2026\"": "label:\"正在启动对话…\"",
+        "label:\"Resolving link\\u2026\"": "label:\"正在解析链接…\"",
         "label:\"Best-of-N Started\"": "label:\"Best-of-N 已开始\"",
         "label:\"Best-of-N Ended\"": "label:\"Best-of-N 已结束\"",
         "title:\"Failed to start Best of N mode\"": "title:\"启动 Best of N 模式失败\"",
@@ -4107,8 +4121,8 @@ def main():
         "label:\"On a schedule\"": "label:\"按定时计划\"",
         "label:\"When something happens\"": "label:\"当特定事件发生时\"",
         "aria-label:\"When it runs\"": "aria-label:\"触发时机\"",
-        "placeholder:\"Search filters\\\\u2026\"": "placeholder:\"搜索筛选条件…\"",
-        "placeholder:\"Search triggers\\\\u2026\"": "placeholder:\"搜索触发器…\"",
+        "placeholder:\"Search filters\\u2026\"": "placeholder:\"搜索筛选条件…\"",
+        "placeholder:\"Search triggers\\u2026\"": "placeholder:\"搜索触发器…\"",
         "placeholder:\"Prompt to run when triggered...\"": "placeholder:\"触发时运行的提示词...\"",
         "placeholder:\"What should the agent do on each run?\"": "placeholder:\"智能体在每次运行时应执行什么操作？\"",
         "placeholder:\"What should the agent do on each run? For example: summarize new bugs assigned to me and anything that changed overnight.\"": "placeholder:\"智能体每次运行应做什么？例如：汇总分配给我的新缺陷及隔夜变更内容。\"",
@@ -4191,7 +4205,7 @@ def main():
         "aria-label:\"Remove audio\"": "aria-label:\"移除音频\"",
         "aria-label:\"Cancel step\"": "aria-label:\"取消步骤\"",
         "title:\"Failed to export artifact\"": "title:\"导出产物失败\"",
-        "title:\"Uploading to Google Drive\\\\u2026\"": "title:\"正在上传到 Google 云端硬盘…\"",
+        "title:\"Uploading to Google Drive\\u2026\"": "title:\"正在上传到 Google 云端硬盘…\"",
         "title:\"Uploaded to Google Drive\"": "title:\"已上传到 Google 云端硬盘\"",
         "aria-label:\"What counts as a document\"": "aria-label:\"哪些内容计为文档\"",
         "emptyText:\"No documents\"": "emptyText:\"暂无文档\"",
@@ -4248,10 +4262,10 @@ def main():
         "title:\"SSH Host\"": "title:\"SSH 主机\"",
         "aria-label:\"SSH host\"": "aria-label:\"SSH 主机\"",
         "aria-label:\"Hidden hosts\"": "aria-label:\"已隐藏主机\"",
-        "label:\"SSH Host\\\\u2026\"": "label:\"SSH 主机…\"",
+        "label:\"SSH Host\\u2026\"": "label:\"SSH 主机…\"",
         "label:\"SSH Config\"": "label:\"SSH 配置\"",
-        "label:\"Connect to SSH Host\\\\u2026\"": "label:\"连接到 SSH 主机…\"",
-        "label:\"Stop SSH Server\\\\u2026\"": "label:\"停止 SSH 服务…\"",
+        "label:\"Connect to SSH Host\\u2026\"": "label:\"连接到 SSH 主机…\"",
+        "label:\"Stop SSH Server\\u2026\"": "label:\"停止 SSH 服务…\"",
         "label:\"Switch to This Computer\"": "label:\"切换回本机\"",
         "tooltip:\"Remove from Recent\"": "tooltip:\"从最近列表中移除\"",
         "heading:\"WSL\"": "heading:\"WSL\"",
@@ -4292,8 +4306,8 @@ def main():
         "title:\"Download PDF\"": "title:\"下载 PDF\"",
         "placeholder:\"Target text in PDF...\"": "placeholder:\"PDF 中的目标文本...\"",
         "label:\"Seek\"": "label:\"进度定位\"",
-        "label:\"Back 5s (\\\\u2190)\"": "label:\"快退 5 秒 (←)\"",
-        "label:\"Forward 5s (\\\\u2192)\"": "label:\"快进 5 秒 (→)\"",
+        "label:\"Back 5s (\\u2190)\"": "label:\"快退 5 秒 (←)\"",
+        "label:\"Forward 5s (\\u2192)\"": "label:\"快进 5 秒 (→)\"",
         "label:\"Volume\"": "label:\"音量\"",
         "title:\"Playback speed (< / >)\"": "title:\"播放倍速 (< / >)\"",
         "aria-label:\"2x playback speed\"": "aria-label:\"2 倍速播放\"",
@@ -4357,6 +4371,150 @@ def main():
         "The app is currently connected to a WSL distro. Reopening locally relaunches it directly on Windows.": "应用当前已连接到 WSL 发行版。以本地模式重新打开将在 Windows 上直接重启。",
         "To use browser tools, you need to enable remote debugging:": "要使用浏览器工具，您需要开启远程调试：",
         "Generate a commit message for the following file changes, which are likely relevant to this conversation.": "为以下可能与当前对话相关的文件变更生成提交信息。",
+        # --- 2.33.0 增量属性词条（显式属性前缀） ---
+        "label:\"Enable Browser Agent\"": "label:\"启用浏览器智能体\"",
+        "label:\"Browsing Data\"": "label:\"浏览数据\"",
+        "description:\"Clear history, cookies and site data from the built-in browser, or manage cookies for each site.\"": "description:\"清除内置浏览器中的历史记录、Cookie 和网站数据，或按站点管理 Cookie。\"",
+        "title:\"Cookies by Site\"": "title:\"按站点管理 Cookie\"",
+        "title:\"Clear Browsing Data?\"": "title:\"清除浏览数据？\"",
+        "aria-label:\"Sites with cookies\"": "aria-label:\"包含 Cookie 的网站\"",
+        "placeholder:\"Search sites...\"": "placeholder:\"搜索网站...\"",
+        "label:\"Web (desktop, remote agents)\"": "label:\"网页版（桌面端，远程智能体）\"",
+        "label:\"Web (desktop, remote agents, PWA)\"": "label:\"网页版（桌面端，远程智能体，PWA）\"",
+        "label:\"Web (mobile, remote agents)\"": "label:\"网页版（移动端，远程智能体）\"",
+        "label:\"Web (mobile, remote agents, PWA)\"": "label:\"网页版（移动端，远程智能体，PWA）\"",
+        "label:\"VS Code Default\"": "label:\"VS Code 默认方案\"",
+        "label:\"Antigravity (AGY) Style\"": "label:\"Antigravity (AGY) 风格\"",
+        "description:\"Manage your keybinding scheme and customize shortcuts in VS Code.\"": "description:\"管理快捷键方案并在 VS Code 中自定义按键绑定。\"",
+        "title:\"Keybinding Scheme\"": "title:\"快捷键方案\"",
+        "subtitle:\"Choose between non-colliding VS Code defaults or standalone Antigravity chords.\"": "subtitle:\"在无冲突的 VS Code 默认方案与独立的 Antigravity 组合键方案之间选择。\"",
+        "aria-label:\"Keybinding Scheme\"": "aria-label:\"快捷键方案\"",
+        "title:\"Customize Shortcuts\"": "title:\"自定义快捷键\"",
+        "subtitle:\"All active Antigravity shortcuts and user keybinding overrides are managed directly by VS Code.\"": "subtitle:\"所有已启用的 Antigravity 快捷键与用户自定义按键绑定均由 VS Code 直接管理。\"",
+        "label:\"Terminal: Select All\"": "label:\"终端：全选\"",
+        "label:\"Show Details\"": "label:\"显示详情\"",
+        "placeholder:\"user@host:port\"": "placeholder:\"用户名@主机:端口 (user@host:port)\"",
+        "label:\"System default app\"": "label:\"系统默认应用\"",
+        "label:\"1. Accessibility\"": "label:\"1. 辅助功能 (Accessibility)\"",
+        "label:\"2. Screen Recording\"": "label:\"2. 屏幕录制 (Screen Recording)\"",
+        "label:\"Side Question Selection\"": "label:\"侧边提问选区\"",
+        "title:\"The main conversation's input isn't available right now.\"": "title:\"主对话输入框当前不可用。\"",
+        "aria-label:\"Insert into main conversation\"": "aria-label:\"插入到主对话\"",
+        "title:\"This side question isn't available in this conversation.\"": "title:\"此侧边提问在当前对话中不可用。\"",
+        "aria-label:\"Response actions\"": "aria-label:\"回复操作\"",
+        "title:\"Voice dictation unavailable\"": "title:\"语音听写不可用\"",
+        "aria-label:\"Stop transcription\"": "aria-label:\"停止转录\"",
+        "label:\"Interrupt Agent\"": "label:\"中断智能体\"",
+        "label:\"No longer available\"": "label:\"已下架不再提供\"",
+        "tooltip:\"Removed from the marketplace. Stays installed until you uninstall it.\"": "tooltip:\"已从扩展市场移除。卸载前仍将保留在本地。\"",
+        "label:\"Installed separately\"": "label:\"已单独安装\"",
+        "tooltip:\"Disabling or removing this bundle doesn't affect it.\"": "tooltip:\"停用或移除此插件包不会影响该插件。\"",
+        "title:\"Review bundle before adding\"": "title:\"添加前审查插件包\"",
+        "title:\"Bundles\"": "title:\"插件包 (Bundles)\"",
+        "label:\"Robot\"": "label:\"机器人\"",
+        "label:\"Tree\"": "label:\"树形图\"",
+        "label:\"Hub\"": "label:\"枢纽节点\"",
+        "label:\"Sliders\"": "label:\"滑块开关\"",
+        "label:\"Terminal window\"": "label:\"终端窗口\"",
+        "label:\"Command prompt\"": "label:\"命令提示符\"",
+        "label:\"Code\"": "label:\"代码块\"",
+        "label:\"Sparkles\"": "label:\"星光闪烁\"",
+        "label:\"Wrench\"": "label:\"扳手工具\"",
+        "label:\"Shield\"": "label:\"安全盾牌\"",
+        "label:\"Speedometer\"": "label:\"速度表\"",
+        "label:\"Gauge\"": "label:\"仪表盘\"",
+        "label:\"Eye\"": "label:\"预览眼睛\"",
+        "label:\"Flask\"": "label:\"实验烧瓶\"",
+        "label:\"Radar\"": "label:\"雷达扫描\"",
+        "label:\"Bot\"": "label:\"智能助手\"",
+        "aria-label:\"Icon\"": "aria-label:\"图标\"",
+        "aria-label:\"Color\"": "aria-label:\"颜色\"",
+        "aria-label:\"Toggle Virtual Machine\"": "aria-label:\"切换虚拟机\"",
+        "aria-label:\"Layout\"": "aria-label:\"布局方式\"",
+        "label:\"Text Selection\"": "label:\"文本选区\"",
+        "label:\"Focus Input\"": "label:\"聚焦输入框\"",
+        "qrAriaLabel:\"Conversation link\"": "qrAriaLabel:\"对话链接\"",
+        # --- 2.33.0 增量安全长句与精确上下文词条 ---
+        "Choose what to clear from the built-in browser. It can't be undone.": "选择要从内置浏览器清除的内容。此操作无法撤销。",
+        "D.createElement(\"span\",null,\"Browsing history\")": "D.createElement(\"span\",null,\"浏览历史记录\")",
+        "Visited URLs and autocomplete suggestions.": "访问过的网址与自动补全建议。",
+        "Cookies and other site data": "Cookie 及其他网站数据",
+        "Cookies, site storage and cache. Signs you out of all sites in the built-in browser and reloads its open tabs.": "Cookie、网站存储与缓存。这会退出内置浏览器中所有网站的登录状态并重新加载已打开的标签页。",
+        "An agent is using the built-in browser. Clearing its data signs the agent out of sites and may interrupt its task.": "有智能体正在使用内置浏览器。清除数据将使其退出网站登录并可能中断当前任务。",
+        "Couldn't clear browsing data. Try again.": "无法清除浏览数据，请重试。",
+        "Loading cookies\\u2026": "正在加载 Cookie…",
+        "Cleared built-in browser data": "已清除内置浏览器数据",
+        "Cleared built-in browser history": "已清除内置浏览器历史记录",
+        "`Honors standard VS Code shortcuts without collisions (e.g. ${": "`遵循标准 VS Code 快捷键且无冲突（例如 ${",
+        "`Uses standalone Antigravity chords (e.g. ${": "`使用独立的 Antigravity 组合键（例如 ${",
+        "Ctrl+L Focus Input, Ctrl+Shift+L New Conversation, Ctrl+Shift+A Picker, Ctrl+Shift+, Settings": "Ctrl+L 聚焦输入框，Ctrl+Shift+L 新建会话，Ctrl+Shift+A 选择器，Ctrl+Shift+, 设置",
+        "\\u2318L Focus Input, \\u2318\\u21e7L New Conversation, \\u2318\\u21e7A Picker, \\u2318\\u21e7, Settings": "⌘L 聚焦输入框，⌘⇧L 新建会话，⌘⇧A 选择器，⌘⇧, 设置",
+        "\\u2318I Focus Input, \\u2318\\u21e7O New Conversation, \\u2318K Picker in chat, \\u2318, Settings, \\u2318[/] History). Replaces Go to Symbol (\\u2318\\u21e7O) and Trigger Suggest (\\u2318I), and rebinds VS Code Settings to \\u2318\\u2325,.": "⌘I 聚焦输入框，⌘⇧O 新建会话，⌘K 对话内选择器，⌘, 设置，⌘[/] 历史记录）。将替换转到符号 (⌘⇧O) 和触发建议 (⌘I)，并将 VS Code 设置重新绑定为 ⌘⌥,。",
+        "Ctrl+I Focus Input, Ctrl+Shift+O New Conversation, Ctrl+K Picker in chat, Ctrl+, Settings, Ctrl+[/] History). Replaces Go to Symbol (Ctrl+Shift+O) and Trigger Suggest (Ctrl+I), and rebinds VS Code Settings to Ctrl+Alt+,.": "Ctrl+I 聚焦输入框，Ctrl+Shift+O 新建会话，Ctrl+K 对话内选择器，Ctrl+, 设置，Ctrl+[/] 历史记录）。将替换转到符号 (Ctrl+Shift+O) 和触发建议 (Ctrl+I)，并将 VS Code 设置重新绑定为 Ctrl+Alt+,。",
+        "Appears larger on mobile": "在移动端显示更大字号",
+        "Back to all agents": "返回全部智能体",
+        "Focus this tile": "聚焦此平铺窗口",
+        "Waiting for the agents\\u2019 windows\\u2026": "正在等待智能体窗口…",
+        "macOS Permissions Ready": "macOS 权限已就绪",
+        "Enable macOS Permissions": "启用 macOS 权限",
+        "={granted:\"Granted \\u2713\",missing:\"Missing\",relaunch:\"Needs relaunch\"}": "={granted:\"已授予 ✓\",missing:\"缺失\",relaunch:\"需要重启\"}",
+        " to open macOS Privacy & Security.": " 以打开 macOS“隐私与安全性”。",
+        "={minimized:\"Minimized\",redacted:\"Hidden by policy\",starting:\"Starting preview\\u2026\",ended:\"Stream ended\",waiting:\"Waiting for video\\u2026\"}": "={minimized:\"已最小化\",redacted:\"已按策略隐藏\",starting:\"正在启动预览…\",ended:\"画面流已结束\",waiting:\"正在等待视频画面…\"}",
+        "[[\"stage\",\"Stage\"],[\"desktop\",\"Desktop\"],[\"grid\",\"Grid\"]]": "[[\"stage\",\"舞台视图\"],[\"desktop\",\"桌面视图\"],[\"grid\",\"网格视图\"]]",
+        "Waiting for subagent": "正在等待子智能体",
+        "Unarchive the main conversation to insert": "取消归档主对话后即可插入",
+        "Transcribing audio\\u2026": "正在转录音频…",
+        "Microphone capture failed.": "麦克风采集失败。",
+        "Microphone problem": "麦克风异常",
+        "Microphone silent": "麦克风无声音",
+        "Check that the microphone is unmuted and the right input device is selected.": "请检查麦克风是否已取消静音，并确认已选择正确的输入设备。",
+        "Speech recognition service is failing, and the current model doesn't support direct audio file input.": "语音识别服务异常，且当前模型不支持直接输入音频文件。",
+        "Couldn\\u2019t send. Try again.": "无法发送，请重试。",
+        "Loading Hosts\\u2026": "正在加载主机…",
+        "Couldn't load your SSH hosts": "无法加载您的 SSH 主机列表",
+        "Hide from this list": "从列表中隐藏",
+        "Show in the list again": "在列表中重新显示",
+        "Create a project on a machine you reach over SSH. It opens in that host's own window.": "在通过 SSH 连接的远程机器上创建项目，它将在该主机的独立窗口中打开。",
+        "Browser tools run on the SSH host this window is connected to, and Chrome there isn't accepting remote debugging. Complete these steps on the SSH host, not on this computer:": "浏览器工具运行在当前窗口连接的 SSH 主机上，而该主机上的 Chrome 未开启远程调试。请在 SSH 主机（而非本机）上完成以下步骤：",
+        " Then create the project in its window.": " 然后在其窗口中创建项目。",
+        " yet. Type one above.": " 中暂无主机。请在上方输入。",
+        "Add bundle": "添加插件包",
+        "Remove bundle": "移除插件包",
+        "Failed to add bundle.": "添加插件包失败。",
+        "Failed to add bundle. Please try again.": "添加插件包失败，请重试。",
+        "Failed to update the bundle. Please try again.": "更新插件包失败，请重试。",
+        "Review contents": "审查内容",
+        "Add anyway": "仍要添加",
+        "Services this plugin connects to on your behalf.": "此插件代表您连接的服务。",
+        "Setup Script": "初始化脚本",
+        "Deleting setup routine": "正在删除初始化流程",
+        "Canceled deletion of setup routine": "已取消删除初始化流程",
+        "Deleted setup routine": "已删除初始化流程",
+        "Saving setup routine": "正在保存初始化流程",
+        "Canceled saving setup routine": "已取消保存初始化流程",
+        "Saved setup routine": "已保存初始化流程",
+        "submitLabel:k=\"Add Comment\"": "submitLabel:k=\"添加批注\"",
+        "Checking command status": "正在检查命令状态",
+        "Checked command status": "已检查命令状态",
+        "Continue Task \\u2192": "继续任务 →",
+        "Open browser screenshot": "打开浏览器截图",
+        "Show fewer resources": "收起部分资源",
+        "Show all resources": "显示全部资源",
+        "Use Default": "使用默认",
+        "={pending:\"Not started\",in_progress:\"In progress\",done:\"Done\",skipped:\"Skipped\"": "={pending:\"未开始\",in_progress:\"进行中\",done:\"已完成\",skipped:\"已跳过\"",
+        "Choose File\\u2026": "选择文件…",
+        "Open in settings": "在设置中打开",
+        "Loading browser steps\\u2026": "正在加载浏览器步骤…",
+        "Browser task still running\\u2026": "浏览器任务仍在运行中…",
+        "Loading preview\\u2026": "正在加载预览…",
+        "File exceeds 512 KB table preview limit.": "文件超出 512 KB 表格预览限制。",
+        "Table exceeds 100 columns.": "表格超出 100 列限制。",
+        "Blocked: file type not allowed": "已拦截：不支持的文件类型",
+        "Credentials stay on this machine and are only sent to the domains listed.": "凭据仅保存在本机，且只会发送至所列域名。",
+        "GitHub: not signed in": "GitHub：未登录",
+        "\"Adding...\"": "\"正在添加...\"",
+        "\"Removing...\"": "\"正在移除...\"",
+        "\"Enabling...\"": "\"正在启用...\"",
 }
 
     print("Applying translations...")
@@ -4371,6 +4529,13 @@ def main():
         content, replaced = apply_string_translation(content, original, translated)
         if replaced:
             replaced_count += 1
+
+    # 闭合 Keybinding Scheme VS Code 模板结尾的英文右括号与句号
+    content = re.sub(
+        r'(`遵循标准 VS Code 快捷键且无冲突（例如 \$\{[^`]+\})\)\.`',
+        r'\1）。`',
+        content,
+    )
 
     content = restore_protected(content, _protected)
 
@@ -5972,6 +6137,126 @@ def main():
     "Match Case (Aa)": "区分大小写 (Aa)",
     "Match Whole Word (ab)": "全字匹配 (ab)",
     "Next Match (Enter)": "下一个匹配项 (Enter)",
+    // --- 2.33.0 Dynamic UI Entries ---
+    "Enable Browser Agent": "启用浏览器智能体",
+    "Browsing Data": "浏览数据",
+    "Clear history, cookies and site data from the built-in browser, or manage cookies for each site.": "清除内置浏览器中的历史记录、Cookie 和网站数据，或按站点管理 Cookie。",
+    "Cookies by Site": "按站点管理 Cookie",
+    "Clear Browsing Data?": "清除浏览数据？",
+    "Sites with cookies": "包含 Cookie 的网站",
+    "Search sites...": "搜索网站...",
+    "Choose what to clear from the built-in browser. It can't be undone.": "选择要从内置浏览器清除的内容。此操作无法撤销。",
+    "Browsing history": "浏览历史记录",
+    "Visited URLs and autocomplete suggestions.": "访问过的网址与自动补全建议。",
+    "Cookies and other site data": "Cookie 及其他网站数据",
+    "Cookies, site storage and cache. Signs you out of all sites in the built-in browser and reloads its open tabs.": "Cookie、网站存储与缓存。这会退出内置浏览器中所有网站的登录状态并重新加载已打开的标签页。",
+    "An agent is using the built-in browser. Clearing its data signs the agent out of sites and may interrupt its task.": "有智能体正在使用内置浏览器。清除数据将使其退出网站登录并可能中断当前任务。",
+    "Couldn't clear browsing data. Try again.": "无法清除浏览数据，请重试。",
+    "Loading cookies…": "正在加载 Cookie…",
+    "Cleared built-in browser data": "已清除内置浏览器数据",
+    "Cleared built-in browser history": "已清除内置浏览器历史记录",
+    "VS Code Default": "VS Code 默认方案",
+    "Antigravity (AGY) Style": "Antigravity (AGY) 风格",
+    "Manage your keybinding scheme and customize shortcuts in VS Code.": "管理快捷键方案并在 VS Code 中自定义按键绑定。",
+    "Keybinding Scheme": "快捷键方案",
+    "Choose between non-colliding VS Code defaults or standalone Antigravity chords.": "在无冲突的 VS Code 默认方案与独立的 Antigravity 组合键方案之间选择。",
+    "Customize Shortcuts": "自定义快捷键",
+    "All active Antigravity shortcuts and user keybinding overrides are managed directly by VS Code.": "所有已启用的 Antigravity 快捷键与用户自定义按键绑定均由 VS Code 直接管理。",
+    "Appears larger on mobile": "在移动端显示更大字号",
+    "Terminal: Select All": "终端：全选",
+    "Show Details": "显示详情",
+    "System default app": "系统默认应用",
+    "1. Accessibility": "1. 辅助功能 (Accessibility)",
+    "2. Screen Recording": "2. 屏幕录制 (Screen Recording)",
+    "macOS Permissions Ready": "macOS 权限已就绪",
+    "Enable macOS Permissions": "启用 macOS 权限",
+    "Granted ✓": "已授予 ✓",
+    "Needs relaunch": "需要重启",
+    "Back to all agents": "返回全部智能体",
+    "Focus this tile": "聚焦此平铺窗口",
+    "Waiting for the agents’ windows…": "正在等待智能体窗口…",
+    "Hidden by policy": "已按策略隐藏",
+    "Starting preview…": "正在启动预览…",
+    "Stream ended": "画面流已结束",
+    "Waiting for video…": "正在等待视频画面…",
+    "A password or secure field is on screen.": "屏幕上包含密码框或安全输入区域。",
+    "This app is not allowed in previews.": "此应用不允许在预览中显示。",
+    "This page is not allowed in previews.": "此网页不允许在预览中显示。",
+    "The window title matches a privacy rule.": "窗口标题匹配隐私保护规则。",
+    "Hidden by the preview policy.": "已被预览策略隐藏。",
+    "Waiting for subagent": "正在等待子智能体",
+    "Side Question Selection": "侧边提问选区",
+    "Text Selection": "文本选区",
+    "The main conversation's input isn't available right now.": "主对话输入框当前不可用。",
+    "Insert into main conversation": "插入到主对话",
+    "This side question isn't available in this conversation.": "此侧边提问在当前对话中不可用。",
+    "Unarchive the main conversation to insert": "取消归档主对话后即可插入",
+    "Response actions": "回复操作",
+    "Voice dictation unavailable": "语音听写不可用",
+    "Stop transcription": "停止转录",
+    "Transcribing audio…": "正在转录音频…",
+    "Microphone capture failed.": "麦克风采集失败。",
+    "Microphone problem": "麦克风异常",
+    "Microphone silent": "麦克风无声音",
+    "Check that the microphone is unmuted and the right input device is selected.": "请检查麦克风是否已取消静音，并确认已选择正确的输入设备。",
+    "Speech recognition service is failing, and the current model doesn't support direct audio file input.": "语音识别服务异常，且当前模型不支持直接输入音频文件。",
+    "Couldn’t send. Try again.": "无法发送，请重试。",
+    "Interrupt Agent": "中断智能体",
+    "Toggle Virtual Machine": "切换虚拟机",
+    "Loading Hosts…": "正在加载主机…",
+    "Couldn't load your SSH hosts": "无法加载您的 SSH 主机列表",
+    "Hide from this list": "从列表中隐藏",
+    "Show in the list again": "在列表中重新显示",
+    "No longer available": "已下架不再提供",
+    "Removed from the marketplace. Stays installed until you uninstall it.": "已从扩展市场移除。卸载前仍将保留在本地。",
+    "Installed separately": "已单独安装",
+    "Disabling or removing this bundle doesn't affect it.": "停用或移除此插件包不会影响该插件。",
+    "Review bundle before adding": "添加前审查插件包",
+    "Bundles": "插件包 (Bundles)",
+    "Add bundle": "添加插件包",
+    "Adding...": "正在添加...",
+    "Removing...": "正在移除...",
+    "Enabling...": "正在启用...",
+    "Remove bundle": "移除插件包",
+    "Failed to add bundle.": "添加插件包失败。",
+    "Failed to add bundle. Please try again.": "添加插件包失败，请重试。",
+    "Failed to update the bundle. Please try again.": "更新插件包失败，请重试。",
+    "Review contents": "审查内容",
+    "Add anyway": "仍要添加",
+    "Services this plugin connects to on your behalf.": "此插件代表您连接的服务。",
+    "Setup Script": "初始化脚本",
+    "Deleting setup routine": "正在删除初始化流程",
+    "Canceled deletion of setup routine": "已取消删除初始化流程",
+    "Deleted setup routine": "已删除初始化流程",
+    "Saving setup routine": "正在保存初始化流程",
+    "Canceled saving setup routine": "已取消保存初始化流程",
+    "Saved setup routine": "已保存初始化流程",
+    "Add Comment": "添加批注",
+    "Checking command status": "正在检查命令状态",
+    "Checked command status": "已检查命令状态",
+    "Continue Task →": "继续任务 →",
+    "Open browser screenshot": "打开浏览器截图",
+    "Show fewer resources": "收起部分资源",
+    "Show all resources": "显示全部资源",
+    "Use Default": "使用默认",
+    "Not started": "未开始",
+    "In progress": "进行中",
+    "Choose File…": "选择文件…",
+    "Open in settings": "在设置中打开",
+    "Loading browser steps…": "正在加载浏览器步骤…",
+    "Browser task still running…": "浏览器任务仍在运行中…",
+    "Loading preview…": "正在加载预览…",
+    "Loading instances...": "正在加载实例...",
+    "File exceeds 512 KB table preview limit.": "文件超出 512 KB 表格预览限制。",
+    "Table exceeds 100 columns.": "表格超出 100 列限制。",
+    "Blocked: file type not allowed": "已拦截：不支持的文件类型",
+    "Credentials stay on this machine and are only sent to the domains listed.": "凭据仅保存在本机，且只会发送至所列域名。",
+    "GitHub: not signed in": "GitHub：未登录",
+    "Web (desktop, remote agents)": "网页版（桌面端，远程智能体）",
+    "Web (desktop, remote agents, PWA)": "网页版（桌面端，远程智能体，PWA）",
+    "Web (mobile, remote agents)": "网页版（移动端，远程智能体）",
+    "Web (mobile, remote agents, PWA)": "网页版（移动端，远程智能体，PWA）",
+    "Focus Input": "聚焦输入框",
 };
 
 
@@ -5983,6 +6268,89 @@ def main():
     const lead = text.slice(0, leadIdx);
     const trail = text.slice(leadIdx + t.length);
     const wrap = (res) => lead + res + trail;
+
+    // --- 2.33.0 新增动态界面文本正则 (Browser Data / Agents / Voice / SSH / Bundles) ---
+    if (/^Deleted cookies for (.+)$/.test(t)) {
+      return wrap(t.replace(/^Deleted cookies for (.+)$/, "已清除 $1 的 Cookie"));
+    }
+    if (/^Delete cookies for (.+)$/.test(t)) {
+      return wrap(t.replace(/^Delete cookies for (.+)$/, "清除 $1 的 Cookie"));
+    }
+    if (/^(\d+) cookies?$/.test(t)) {
+      return wrap(t.replace(/^(\d+) cookies?$/, "$1 个 Cookie"));
+    }
+    if (/^Failed to update agent: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Failed to update agent: (.+)$/, "更新智能体失败：$1"));
+    }
+    if (/^Failed to remove agent: (.+)$/.test(t)) {
+      return wrap(t.replace(/^Failed to remove agent: (.+)$/, "移除智能体失败：$1"));
+    }
+    if (/^(.+?) is paused in (.+?); its view keeps playing here\. Resume to let it continue\.$/ .test(t)) {
+      return wrap(t.replace(/^(.+?) is paused in (.+?); its view keeps playing here\. Resume to let it continue\.$/, (_, ag, title) => {
+        const agZh = ag === "The agent" ? "该智能体" : `${ag} `;
+        return `${agZh}已在 ${title} 中暂停；画面仍在此处持续播放，恢复后可继续运行。`;
+      }));
+    }
+    if (/^Honors standard VS Code [s]hortcuts without collisions \(e\.g\. (.+)\)\.$/.test(t)) {
+      return wrap(t.replace(/^Honors standard VS Code [s]hortcuts without collisions \(e\.g\. (.+)\)\.$/, (_, ex) => {
+        const exZh = ex
+          .replace(/Focus Input/g, "聚焦输入框")
+          .replace(/New Conversation/g, "新建会话")
+          .replace(/Picker/g, "选择器")
+          .replace(/Settings/g, "设置");
+        return `遵循标准 VS Code 快捷键且无冲突（例如 ${exZh}）。`;
+      }));
+    }
+    if (/^Uses standalone Antigravity [c]hords \(e\.g\. (.+?)\)\. Replaces Go to Symbol \((.+?)\) and Trigger Suggest \((.+?)\), and rebinds VS Code Settings to (.+?)\.$/.test(t)) {
+      return wrap(t.replace(/^Uses standalone Antigravity [c]hords \(e\.g\. (.+?)\)\. Replaces Go to Symbol \((.+?)\) and Trigger Suggest \((.+?)\), and rebinds VS Code Settings to (.+?)\.$/, (_, ex, k1, k2, k3) => {
+        const exZh = ex
+          .replace(/Focus Input/g, "聚焦输入框")
+          .replace(/New Conversation/g, "新建会话")
+          .replace(/Picker in chat/g, "对话内选择器")
+          .replace(/Settings/g, "设置")
+          .replace(/History/g, "历史记录");
+        return `使用独立的 Antigravity 组合键（例如 ${exZh}）。将替换转到符号 (${k1}) 和触发建议 (${k2})，并将 VS Code 设置重新绑定为 ${k3}。`;
+      }));
+    }
+    if (/^Retrying transcription \(attempt (\d+)\)[….]*$/.test(t)) {
+      return wrap(t.replace(/^Retrying transcription \(attempt (\d+)\)[….]*$/, "正在重试转录（第 $1 次尝试）…"));
+    }
+    if (/^SSH Config \((.+)\)$/.test(t)) {
+      return wrap(t.replace(/^SSH Config \((.+)\)$/, "SSH 配置 ($1)"));
+    }
+    if (/^SSH config: (.+)$/.test(t)) {
+      return wrap(t.replace(/^SSH config: (.+)$/, "SSH 配置：$1"));
+    }
+    if (/^No hosts in (.+) yet\. Type one above\.$/.test(t)) {
+      return wrap(t.replace(/^No hosts in (.+) yet\. Type one above\.$/, "$1 中暂无主机。请在上方输入。"));
+    }
+    if (/^Hide (.+) from this list$/.test(t)) {
+      return wrap(t.replace(/^Hide (.+) from this list$/, "从列表中隐藏 $1"));
+    }
+    if (/^Show (.+) in the list again$/.test(t)) {
+      return wrap(t.replace(/^Show (.+) in the list again$/, "在列表中重新显示 $1"));
+    }
+    if (/^Hid (.+)$/.test(t)) {
+      return wrap(t.replace(/^Hid (.+)$/, "已隐藏 $1"));
+    }
+    if (/^Showing (.+) again$/.test(t)) {
+      return wrap(t.replace(/^Showing (.+) again$/, "已重新显示 $1"));
+    }
+    if (/^Add bundle (.+)$/.test(t)) {
+      return wrap(t.replace(/^Add bundle (.+)$/, "添加插件包 $1"));
+    }
+    if (/^Adding plugins from (.+)$/.test(t)) {
+      return wrap(t.replace(/^Adding plugins from (.+)$/, "正在从 $1 添加插件"));
+    }
+    if (/^This plugin in (.+) may have looser code review\. Review its contents before adding the bundle\.$/.test(t)) {
+      return wrap(t.replace(/^This plugin in (.+) may have looser code review\. Review its contents before adding the bundle\.$/, "$1 中的此插件代码审查可能较宽松。添加插件包前请先审查其内容。"));
+    }
+    if (/^These plugins in (.+) may have looser code review\. Review their contents before adding the bundle\.$/.test(t)) {
+      return wrap(t.replace(/^These plugins in (.+) may have looser code review\. Review their contents before adding the bundle\.$/, "$1 中的这些插件代码审查可能较宽松。添加插件包前请先审查其内容。"));
+    }
+    if (/^No server is listening on port (\d+) inside the remote workspace\. Start it, or ask the agent to, then retry\.$/.test(t)) {
+      return wrap(t.replace(/^No server is listening on port (\d+) inside the remote workspace\. Start it, or ask the agent to, then retry\.$/, "远程工作区内的端口 $1 上没有正在监听的服务。请启动服务（或让智能体启动）后重试。"));
+    }
 
     // --- 2.32.2 新增动态界面文本正则 ---
     if (/^Thinking \((\d+)s\)[….]*$/.test(t)) {

@@ -20,6 +20,7 @@ import verify_bundle
 
 SHA256_2282 = "C3C5C9BB6D418E8D919CB94AA7DE4DF9BA449056B7D6122C32279CE72E2D2BAD"
 SHA256_2322 = "4C0A1FF5659E7DD92E6AD249A386C0DBCE2C8E94B88522A2F366FF20B397081E"
+SHA256_2330 = "F066A497C9C61198394CB3218E42FF61D85B03910D81282589C3EF066905F347"
 
 
 class TestChameleonSafety(unittest.TestCase):
@@ -29,14 +30,14 @@ class TestChameleonSafety(unittest.TestCase):
         self.assertTrue(selected.endswith("customScheme.core.js"), f"Expected core.js, got {selected}")
 
     def test_supported_versions_enable_ai_ui(self):
-        """受支持的 Antigravity 2.28.2 与 2.32.2 必须成功启用 customScheme.ai-ui.js。"""
-        for ver in ("2.28.2", "2.32.2"):
+        """受支持的 Antigravity 2.28.2、2.32.2 与 2.33.0 必须成功启用 customScheme.ai-ui.js。"""
+        for ver in ("2.28.2", "2.32.2", "2.33.0"):
             with self.subTest(version=ver):
                 selected = smart_patch.select_custom_scheme(ver, ROOT)
                 self.assertTrue(selected.endswith("customScheme.ai-ui.js"), f"Expected ai-ui.js for {ver}, got {selected}")
 
     def test_compat_json_integrity(self):
-        """校验 ai-ui-compat.json 结构、2.28.2 与 2.32.2 签名完整性。"""
+        """校验 ai-ui-compat.json 结构、2.28.2、2.32.2 与 2.33.0 签名完整性。"""
         compat_path = os.path.join(ROOT, "patches", "ai-ui-compat.json")
         with open(compat_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -55,6 +56,10 @@ class TestChameleonSafety(unittest.TestCase):
         v2322 = [b for b in bundles if b.get("antigravityVersion") == "2.32.2"]
         self.assertEqual(len(v2322), 1, "2.32.2 must appear uniquely in supportedBundles")
         self.assertEqual(v2322[0].get("sourceSha256"), SHA256_2322)
+
+        v2330 = [b for b in bundles if b.get("antigravityVersion") == "2.33.0"]
+        self.assertEqual(len(v2330), 1, "2.33.0 must appear uniquely in supportedBundles")
+        self.assertEqual(v2330[0].get("sourceSha256"), SHA256_2330)
 
     def test_chm_no_inject_preserves_high_risk_literals_and_arrays(self):
         """CHM_NO_INJECT=1 模式下必须 100% 保留高危代码字面量、数组与键位映射，并正常翻译纯 UI 属性。"""
@@ -91,7 +96,19 @@ class TestChameleonSafety(unittest.TestCase):
             'var t5a = { draft: "Draft", open: "Open", merged: "Merged", closed: "Closed" };',
             'const PR = { allow: "Allow", ask: "Ask", deny: "Deny" };',
             'const xZc = { google3: "google3", none: "None" };',
+            'function Xpb(){var a=(f,g,h)=>({key:f,modifiers:g,onMatch:(k,l)=>{RL(l,h,k)}}),b=(f,g,h,k)=>({key:f,modifiers:g,onMatch:(l,m)=>{l.preventDefault();RL(m,h,k)}});return[a("ArrowRight",cN,Fnb),a("Delete",{},RK),b("Backspace",Fpb,EK,!0),b("Delete",Fpb,EK,!1),a("Tab",cN,SK)]}',
+            'function pQa(a){if(a.startsWith("Side question (conversation ")){a=a.slice(28);}}',
+            'var agScreen = { screen: "Agents", label: "Agents" };',
+            'var modal233 = { modalType: "BROWSER_SUBAGENT_TRAJECTORY", stepIndex: 1 };',
+            'switch (st2) { case "audio_transcription_clip": case "setupRequired": case "permission_denied": break; }',
+            'var payload233 = { type: "SSH_HOST", kind: "NEW_PROJECT" };',
+            'const ENa = {"/files":"Files","/checks":"Checks","/commits":"Commits"};',
+            'G("org.eclipse.elk.alg.common","Tree",225);',
+            'var rwd=[["stage","Stage"],["desktop","Desktop"],["grid","Grid"]];',
             'var ui1 = { label:"New Conversation", title:"Account", "aria-label":"Message input" };',
+            'var ui233 = { label:"Browsing Data", title:"Keybinding Scheme", "aria-label":"Toggle Virtual Machine", sub:{ label:"Enable Browser Agent", iconLabel:{label:"Code"}, treeIcon:{label:"Tree"} } };',
+            'const XQb=[{value:"vscode",label:"VS Code Default",recommended:!0,description:a=>`Honors standard VS Code shortcuts without collisions (e.g. ${a?"\\u2318L Focus Input, \\u2318\\u21e7L New Conversation, \\u2318\\u21e7A Picker, \\u2318\\u21e7, Settings":"Ctrl+L Focus Input, Ctrl+Shift+L New Conversation, Ctrl+Shift+A Picker, Ctrl+Shift+, Settings"}).`},{value:"agy",label:"Antigravity (AGY) Style",description:a=>`Uses standalone Antigravity chords (e.g. ${a?"\\u2318I Focus Input, \\u2318\\u21e7O New Conversation, \\u2318K Picker in chat, \\u2318, Settings, \\u2318[/] History). Replaces Go to Symbol (\\u2318\\u21e7O) and Trigger Suggest (\\u2318I), and rebinds VS Code Settings to \\u2318\\u2325,.":\n"Ctrl+I Focus Input, Ctrl+Shift+O New Conversation, Ctrl+K Picker in chat, Ctrl+, Settings, Ctrl+[/] History). Replaces Go to Symbol (Ctrl+Shift+O) and Trigger Suggest (Ctrl+I), and rebinds VS Code Settings to Ctrl+Alt+,."}`}];',
+            'var cmt233 = ({placeholder:h="Leave a comment",submitLabel:k="Add Comment"}) => [h, k];',
         ]
         fixture_code = "\n".join(fixture_parts) + "\n"
 
@@ -156,6 +173,14 @@ class TestChameleonSafety(unittest.TestCase):
                 'var t5a = { draft: "Draft", open: "Open", merged: "Merged", closed: "Closed" }',
                 'const PR = { allow: "Allow", ask: "Ask", deny: "Deny" }',
                 'const xZc = { google3: "google3", none: "None" }',
+                'function Xpb(){var a=(f,g,h)=>({key:f,modifiers:g,onMatch:(k,l)=>{RL(l,h,k)}}),b=(f,g,h,k)=>({key:f,modifiers:g,onMatch:(l,m)=>{l.preventDefault();RL(m,h,k)}});return[a("ArrowRight",cN,Fnb),a("Delete",{},RK),b("Backspace",Fpb,EK,!0),b("Delete",Fpb,EK,!1),a("Tab",cN,SK)]}',
+                'if(a.startsWith("Side question (conversation "))',
+                'screen: "Agents"',
+                'modalType: "BROWSER_SUBAGENT_TRAJECTORY"',
+                'case "audio_transcription_clip": case "setupRequired": case "permission_denied":',
+                'type: "SSH_HOST", kind: "NEW_PROJECT"',
+                'const ENa = {"/files":"Files","/checks":"Checks","/commits":"Commits"}',
+                'G("org.eclipse.elk.alg.common","Tree",225)',
             ]
             for snippet in preserved_snippets:
                 self.assertIn(snippet, out, f"Protected code literal mutated: {snippet}")
@@ -164,26 +189,60 @@ class TestChameleonSafety(unittest.TestCase):
             self.assertIn('label:"新建会话"', out)
             self.assertIn('title:"账户"', out)
             self.assertIn('"aria-label":"消息输入框"', out)
+            self.assertIn('label:"浏览数据"', out)
+            self.assertIn('title:"快捷键方案"', out)
+            self.assertIn('"aria-label":"切换虚拟机"', out)
+            self.assertIn('label:"启用浏览器智能体"', out)
+            self.assertIn('label:"代码块"', out)
+            self.assertIn('label:"树形图"', out)
+            self.assertIn('[["stage","舞台视图"],["desktop","桌面视图"],["grid","网格视图"]]', out)
+            self.assertNotIn('Honors standard VS Code shortcuts', out)
+            self.assertNotIn('Uses standalone Antigravity chords', out)
+            self.assertIn('`遵循标准 VS Code 快捷键且无冲突（例如 ${a?"⌘L 聚焦输入框', out)
+            self.assertIn('}）。`', out)
+            self.assertIn('`使用独立的 Antigravity 组合键（例如 ${a?"⌘I 聚焦输入框', out)
+            self.assertIn('placeholder:h="留下批注",submitLabel:k="添加批注"', out)
+            self.assertNotIn('submitLabel:k="Add Comment"', out)
 
             _, total_bad = verify_bundle.scan_bundle(out)
             self.assertEqual(total_bad, 0, "CHM_NO_INJECT output failed verify_bundle.scan_bundle")
 
-            # 可选外部真实 bundle 校验钩子（若显式设置 CHM_TEST_2322_MAIN_JS 环境变量）
-            ext_2322 = os.environ.get("CHM_TEST_2322_MAIN_JS", "")
-            if ext_2322 and os.path.isfile(ext_2322):
-                ext_out = os.path.join(td, "ext_2322_noinj.js")
-                p2 = subprocess.run(
-                    [sys.executable, os.path.join(SCRIPTS_DIR, "translate_ui.py"), "--input", ext_2322, "--output", ext_out],
-                    env=env,
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                )
-                self.assertEqual(p2.returncode, 0, p2.stderr)
-                with open(ext_out, "r", encoding="utf-8") as f:
-                    ext_txt = f.read()
-                _, ext_bad = verify_bundle.scan_bundle(ext_txt)
-                self.assertEqual(ext_bad, 0)
+            # 可选外部真实 bundle 校验钩子（若显式设置 CHM_TEST_2322_MAIN_JS / CHM_TEST_2330_MAIN_JS 环境变量）
+            for env_key in ("CHM_TEST_2322_MAIN_JS", "CHM_TEST_2330_MAIN_JS"):
+                ext_path = os.environ.get(env_key, "")
+                if ext_path and os.path.isfile(ext_path):
+                    ext_out = os.path.join(td, f"{env_key.lower()}_noinj.js")
+                    p2 = subprocess.run(
+                        [sys.executable, os.path.join(SCRIPTS_DIR, "translate_ui.py"), "--input", ext_path, "--output", ext_out],
+                        env=env,
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                    )
+                    self.assertEqual(p2.returncode, 0, p2.stderr)
+                    with open(ext_out, "r", encoding="utf-8") as f:
+                        ext_txt = f.read()
+                    _, ext_bad = verify_bundle.scan_bundle(ext_txt)
+                    self.assertEqual(ext_bad, 0)
+
+    def test_detect_key_checker_2330_declarative_factory(self):
+        """验证 2.33.0 声明式 onMatch 快捷键工厂场景下 detect_key_checker 返回 None（不误匹配局部短名或回退 LG）。"""
+        import translate_ui
+        sample_2330 = (
+            'function Epb(){var a=(f,g,h)=>({key:f,modifiers:g,onMatch:(k,l)=>{RL(l,h,k)}}),'
+            'b=(f,g,h,k)=>({key:f,modifiers:g,onMatch:(l,m)=>{l.preventDefault();RL(m,h,k)}});'
+            'return[a("ArrowRight",cN,Fnb),a("Delete",{},RK),b("Backspace",Fpb,EK,!0),a("Tab",cN,SK)]}\n'
+            'function LG(x,y,z){return x+y+z;} LG(x,"Delete",1);\n'
+        )
+        protected, placeholders, stats = translate_ui.protect_code_positions(sample_2330)
+        restored = translate_ui.restore_protected(protected, placeholders)
+        self.assertEqual(restored, sample_2330)
+        self.assertIn("Lexical快捷键工厂", stats)
+        self.assertIsNone(translate_ui.detect_key_checker(sample_2330))
+
+        # 若同时存在旧式全局 3 参判定函数 yL(a,"Backspace",1)，仍可正确识别
+        sample_legacy = 'function yL(ev,k,fn){return ev.key===k} yL(a,"Backspace",1);'
+        self.assertEqual(translate_ui.detect_key_checker(sample_legacy), "yL")
 
     def test_dom_translator_non_tdz_and_regex_execution(self):
         """验证 dom_translator_js 语法有效，且 translateDynamicRegex/translateText 无 TDZ 错误并正确执行。"""
@@ -228,6 +287,20 @@ assert.strictEqual(translateText('Hey Alice, what should we build today?'), '你
 assert.strictEqual(translateText('Enter to Send'), '按 Enter 发送');
 assert.strictEqual(translateText('Cancel'), '取消');
 assert.strictEqual(translateText('Running command'), '正在运行命令');
+assert.strictEqual(translateText('Deleted cookies for example.com'), '已清除 example.com 的 Cookie');
+assert.strictEqual(translateText('Delete cookies for example.com'), '清除 example.com 的 Cookie');
+assert.strictEqual(translateText('3 cookies'), '3 个 Cookie');
+assert.strictEqual(translateText('1 cookie'), '1 个 Cookie');
+assert.strictEqual(translateText('Failed to update agent: timeout'), '更新智能体失败：timeout');
+assert.strictEqual(translateText('Retrying transcription (attempt 2)…'), '正在重试转录（第 2 次尝试）…');
+assert.strictEqual(translateText('SSH Config (~/.ssh/config)'), 'SSH 配置 (~/.ssh/config)');
+assert.strictEqual(translateText('Add bundle my-bundle'), '添加插件包 my-bundle');
+assert.strictEqual(translateText('Adding plugins from my-bundle'), '正在从 my-bundle 添加插件');
+assert.strictEqual(translateText('No server is listening on port 3000 inside the remote workspace. Start it, or ask the agent to, then retry.'), '远程工作区内的端口 3000 上没有正在监听的服务。请启动服务（或让智能体启动）后重试。');
+assert.strictEqual(translateText('The agent is paused in Chrome; its view keeps playing here. Resume to let it continue.'), '该智能体已在 Chrome 中暂停；画面仍在此处持续播放，恢复后可继续运行。');
+assert.strictEqual(translateText('BrowserAgent is paused in Chrome; its view keeps playing here. Resume to let it continue.'), 'BrowserAgent 已在 Chrome 中暂停；画面仍在此处持续播放，恢复后可继续运行。');
+assert.strictEqual(translateText('Honors standard VS Code shortcuts without collisions (e.g. Ctrl+L Focus Input).'), '遵循标准 VS Code 快捷键且无冲突（例如 Ctrl+L 聚焦输入框）。');
+assert.strictEqual(translateText('Uses standalone Antigravity chords (e.g. Ctrl+I Focus Input). Replaces Go to Symbol (Ctrl+Shift+O) and Trigger Suggest (Ctrl+I), and rebinds VS Code Settings to Ctrl+Alt+,.'), '使用独立的 Antigravity 组合键（例如 Ctrl+I 聚焦输入框）。将替换转到符号 (Ctrl+Shift+O) 和触发建议 (Ctrl+I)，并将 VS Code 设置重新绑定为 Ctrl+Alt+,。');
 assert.strictEqual(translateText('Unmapped_Sentinel_123'), 'Unmapped_Sentinel_123');
 console.log('DOM_ENGINE_OK');
 """
@@ -296,6 +369,86 @@ console.log('DOM_ENGINE_OK');
                 encoding="utf-8",
             )
             self.assertEqual(cli_leak.returncode, 2, cli_leak.stdout)
+
+    def test_rebuild_ui_probe_filters_sidecar_and_wrong_product(self):
+        """验证 rebuild_ui._probe_main_js_url_from_ports 必须校验 productName=\"antigravity\" 且 /main.js > 1 MB，排除小型 sidecar。"""
+        import ssl
+        from unittest.mock import patch
+        import rebuild_ui
+
+        class FakeResp:
+            def __init__(self, status, body=b"", headers=None):
+                self.status = status
+                self._body = body
+                self.headers = headers or {}
+
+            def read(self, n=-1):
+                return self._body if n < 0 else self._body[:n]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(req, context=None, timeout=1.5):
+            url = req.full_url
+            method = getattr(req, "method", "GET")
+            # Port 56286: has __APP_CONFIG__ & /main.js but wrong productName
+            if url == "https://127.0.0.1:56286/":
+                return FakeResp(200, b'__APP_CONFIG__={"productName":"sidecar"}<script src="/main.js"></script>')
+            # Port 56287: antigravity productName but 183 KB sidecar main.js
+            if url == "https://127.0.0.1:56287/":
+                return FakeResp(200, b'__APP_CONFIG__={"productName":"antigravity","appVersion":"2.33.0"}<script src="/main.js"></script>')
+            if url == "https://127.0.0.1:56287/main.js" and method == "HEAD":
+                return FakeResp(200, headers={"Content-Length": "187392"})
+            # Port 45428: valid antigravity Hub UI (> 1 MB main.js)
+            if url == "https://127.0.0.1:45428/":
+                return FakeResp(200, b'__APP_CONFIG__={"productName":"antigravity","appVersion":"2.33.0"}<script src="/main.js"></script>')
+            if url == "https://127.0.0.1:45428/main.js" and method == "HEAD":
+                return FakeResp(200, headers={"Content-Length": "12353230"})
+            raise OSError("unexpected request")
+
+        ctx = ssl._create_unverified_context()
+        with patch.object(rebuild_ui.urllib.request, "urlopen", side_effect=fake_urlopen):
+            hit = rebuild_ui._probe_main_js_url_from_ports(["56286", "56287", "45428"], ctx)
+        self.assertEqual(hit, "https://127.0.0.1:45428/main.js")
+
+    def test_batch_scripts_crlf_encoding_and_no_taskkill(self):
+        """校验仓库内全部 *.bat 均采用 Windows CRLF 行尾、编码与 chcp 一致且严禁包含 taskkill。"""
+        import codecs
+        import glob
+
+        expected_bats = {
+            "一键激活汉化_2300.bat",
+            "一键激活汉化_2310.bat",
+            "一键激活汉化_2312.bat",
+            "一键激活汉化_2330.bat",
+        }
+        bat_paths = sorted(glob.glob(os.path.join(ROOT, "*.bat")))
+        found_names = {os.path.basename(p) for p in bat_paths}
+        self.assertTrue(expected_bats.issubset(found_names), f"Missing expected bat scripts: {expected_bats - found_names}")
+
+        for path in bat_paths:
+            name = os.path.basename(path)
+            with self.subTest(bat=name):
+                with open(path, "rb") as f:
+                    raw = f.read()
+
+                self.assertFalse(raw.startswith(codecs.BOM_UTF8), f"{name} must not contain UTF-8 BOM")
+                crlf_count = raw.count(b"\r\n")
+                lf_only_count = raw.count(b"\n") - crlf_count
+                self.assertGreater(crlf_count, 0, f"{name} must use CRLF line endings")
+                self.assertEqual(lf_only_count, 0, f"{name} contains {lf_only_count} LF-only lines")
+                self.assertNotIn(b"taskkill", raw.lower(), f"{name} must not contain taskkill")
+
+                has_chcp_65001 = b"chcp 65001" in raw.lower()
+                if has_chcp_65001:
+                    text = raw.decode("utf-8")
+                    self.assertIn("变色龙", text)
+                else:
+                    text = raw.decode("gbk")
+                    self.assertIn("变色龙", text)
 
 
 if __name__ == "__main__":

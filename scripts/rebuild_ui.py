@@ -63,45 +63,182 @@ def same_target(src, dst):
     return os.path.normcase(os.path.realpath(src)) == os.path.normcase(os.path.realpath(dst))
 
 
+def _discover_loopback_ports(return_groups=False):
+    """扫描本机 127.0.0.1 监听端口（优先 language_server 进程所属端口）。"""
+    ls_ports = []
+    other_ports = []
+    seen = set()
+
+    if sys.platform == "win32":
+        ls_pids = set()
+        try:
+            ps_out = subprocess.check_output(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "Get-CimInstance Win32_Process -Filter \"Name like 'language_server%'\" | Select-Object -ExpandProperty ProcessId",
+                ],
+                text=True,
+                errors="replace",
+                timeout=5,
+            )
+            for line in ps_out.splitlines():
+                tok = line.strip()
+                if tok.isdigit():
+                    ls_pids.add(tok)
+        except Exception:
+            pass
+
+        try:
+            net_out = subprocess.check_output(
+                ["netstat", "-ano", "-p", "TCP"],
+                text=True,
+                errors="replace",
+                timeout=5,
+            )
+            for line in net_out.splitlines():
+                m = re.search(r"127\.0\.0\.1:(\d+)\s+\S+\s+LISTENING\s+(\d+)", line)
+                if not m:
+                    continue
+                port_s, pid_s = m.group(1), m.group(2)
+                if port_s in seen:
+                    continue
+                seen.add(port_s)
+                if pid_s in ls_pids:
+                    ls_ports.append(port_s)
+                else:
+                    other_ports.append(port_s)
+        except Exception:
+            pass
+    else:
+        try:
+            lsof_out = subprocess.check_output(
+                ["lsof", "-nP", "-iTCP", "-sTCP:LISTEN"],
+                text=True,
+                errors="replace",
+                timeout=5,
+            )
+            for line in lsof_out.splitlines():
+                m = re.search(r"127\.0\.0\.1:(\d+)\s+\(LISTEN\)", line)
+                if not m:
+                    continue
+                port_s = m.group(1)
+                if port_s in seen:
+                    continue
+                seen.add(port_s)
+                if "language_server" in line.lower():
+                    ls_ports.append(port_s)
+                else:
+                    other_ports.append(port_s)
+        except Exception:
+            pass
+
+    if return_groups:
+        return ls_ports, other_ports
+    return ls_ports + other_ports
+
+
+def _verify_main_js_size(main_js_url, ssl_ctx, min_bytes=1048576):
+    """校验 /main.js 响应体积大于 min_bytes（默认 1 MB），排除 183KB 等小型 sidecar 服务。"""
+    try:
+        head_req = urllib.request.Request(
+            main_js_url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(head_req, context=ssl_ctx, timeout=1.5) as resp:
+            if resp.status == 200:
+                cl = resp.headers.get("Content-Length")
+                if cl and cl.strip().isdigit():
+                    return int(cl.strip()) > min_bytes
+    except Exception:
+        pass
+
+    try:
+        get_req = urllib.request.Request(
+            main_js_url, headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(get_req, context=ssl_ctx, timeout=3.0) as resp:
+            if resp.status != 200:
+                return False
+            cl = resp.headers.get("Content-Length")
+            if cl and cl.strip().isdigit():
+                return int(cl.strip()) > min_bytes
+            chunk = resp.read(min_bytes + 1)
+            return len(chunk) > min_bytes
+    except Exception:
+        return False
+
+
+def _probe_main_js_url_from_ports(ports, ssl_ctx, min_main_js_bytes=1048576):
+    """通过请求 index.html 校验 __APP_CONFIG__、productName 与 /main.js 体积定位主 Hub UI 端口。"""
+    for port in ports:
+        index_url = f"https://127.0.0.1:{port}/"
+        try:
+            req = urllib.request.Request(index_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, context=ssl_ctx, timeout=1.5) as resp:
+                if resp.status != 200:
+                    continue
+                html = resp.read(262144).decode("utf-8", errors="ignore")
+            if "__APP_CONFIG__" not in html or "/main.js" not in html:
+                continue
+            if not re.search(r'"productName"\s*:\s*"antigravity"', html, re.IGNORECASE):
+                continue
+            candidate_url = f"https://127.0.0.1:{port}/main.js"
+            if not _verify_main_js_size(candidate_url, ssl_ctx, min_bytes=min_main_js_bytes):
+                continue
+            ver_m = re.search(r'"appVersion"\s*:\s*"([^"]+)"', html)
+            detected_ver = ver_m.group(1) if ver_m else "unknown"
+            log(f"命中 Antigravity 主 UI 服务: https://127.0.0.1:{port}/ (appVersion={detected_ver})")
+            return candidate_url
+        except Exception:
+            continue
+    return None
+
+
 def fetch_bundle(dest):
-    """从运行中的 Antigravity 的 DevTools 端口抓取原版 main.js。"""
+    """从运行中的 Antigravity 抓取原版 main.js（优先 DevToolsActivePort，缺失时扫描本地 UI 端口）。"""
     ssl_ctx = ssl._create_unverified_context()
     port_file = os.path.join(appdata_dir(), "DevToolsActivePort")
-    if not os.path.exists(port_file):
-        fail("找不到 DevToolsActivePort，请先启动 Antigravity 再重试。")
-
-    with open(port_file, "r", encoding="utf-8") as f:
-        devtools_port = f.readline().strip()
-    if not devtools_port or not devtools_port.isdigit():
-        fail(f"无效的 DevToolsActivePort 内容: {devtools_port!r}")
-
-    url = f"http://127.0.0.1:{devtools_port}/json"
-    try:
-        with urllib.request.urlopen(url, timeout=5) as resp:
-            data = json.loads(resp.read())
-    except Exception as exc:
-        fail(f"无法访问 DevTools ({url}): {exc}")
-
-    if not isinstance(data, list):
-        fail("DevTools 返回的目标列表格式异常。")
-
-    # 优先匹配 type == "page" 且锚定 URL 开头的本地 HTTPS 端口
     main_js_url = None
-    for item in data:
-        if isinstance(item, dict) and item.get("type") == "page":
-            m = re.match(r"^https://127\.0\.0\.1:(\d+)/", item.get("url", ""))
-            if m:
-                main_js_url = f"https://127.0.0.1:{m.group(1)}/main.js"
-                break
+
+    if os.path.exists(port_file):
+        with open(port_file, "r", encoding="utf-8") as f:
+            devtools_port = f.readline().strip()
+        if devtools_port and devtools_port.isdigit():
+            url = f"http://127.0.0.1:{devtools_port}/json"
+            try:
+                with urllib.request.urlopen(url, timeout=5) as resp:
+                    data = json.loads(resp.read())
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict) and item.get("type") == "page":
+                            m = re.match(r"^https://127\.0\.0\.1:(\d+)/", item.get("url", ""))
+                            if m:
+                                main_js_url = f"https://127.0.0.1:{m.group(1)}/main.js"
+                                break
+                    if not main_js_url:
+                        for item in data:
+                            if isinstance(item, dict):
+                                m = re.match(r"^https://127\.0\.0\.1:(\d+)/", item.get("url", ""))
+                                if m:
+                                    main_js_url = f"https://127.0.0.1:{m.group(1)}/main.js"
+                                    break
+            except Exception as exc:
+                log(f"访问 DevTools ({url}) 失败 ({exc})，尝试本地端口兜底探测...")
+
     if not main_js_url:
-        for item in data:
-            if isinstance(item, dict):
-                m = re.match(r"^https://127\.0\.0\.1:(\d+)/", item.get("url", ""))
-                if m:
-                    main_js_url = f"https://127.0.0.1:{m.group(1)}/main.js"
-                    break
+        log("未检测到可用的 DevToolsActivePort（2.33.0+ 默认清理），正在优先扫描本机 language_server UI 端口...")
+        ls_ports, other_ports = _discover_loopback_ports(return_groups=True)
+        if ls_ports:
+            main_js_url = _probe_main_js_url_from_ports(ls_ports, ssl_ctx)
+        if not main_js_url and other_ports:
+            main_js_url = _probe_main_js_url_from_ports(other_ports, ssl_ctx)
+
     if not main_js_url:
-        fail("未能从 DevTools 目标中识别出 UI 端口。")
+        fail(
+            "未能自动探测到运行中的 Antigravity 主 UI 服务。\n"
+            "请确认 Antigravity 正在运行，或使用 --input <原版main.js路径> 手动指定源 bundle。"
+        )
 
     log(f"下载原版 bundle: {main_js_url}")
     try:
