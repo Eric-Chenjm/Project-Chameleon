@@ -21,6 +21,7 @@ import verify_bundle
 SHA256_2282 = "C3C5C9BB6D418E8D919CB94AA7DE4DF9BA449056B7D6122C32279CE72E2D2BAD"
 SHA256_2322 = "4C0A1FF5659E7DD92E6AD249A386C0DBCE2C8E94B88522A2F366FF20B397081E"
 SHA256_2330 = "F066A497C9C61198394CB3218E42FF61D85B03910D81282589C3EF066905F347"
+SHA256_2340 = "D52CE739C15044C02A32E1B9DF62BFE39DD8164C70A2AB783540E6ED5E070251"
 
 
 class TestChameleonSafety(unittest.TestCase):
@@ -30,14 +31,14 @@ class TestChameleonSafety(unittest.TestCase):
         self.assertTrue(selected.endswith("customScheme.core.js"), f"Expected core.js, got {selected}")
 
     def test_supported_versions_enable_ai_ui(self):
-        """受支持的 Antigravity 2.28.2、2.32.2 与 2.33.0 必须成功启用 customScheme.ai-ui.js。"""
-        for ver in ("2.28.2", "2.32.2", "2.33.0"):
+        """受支持的 Antigravity 2.28.2、2.32.2、2.33.0 与 2.34.0 必须成功启用 customScheme.ai-ui.js。"""
+        for ver in ("2.28.2", "2.32.2", "2.33.0", "2.34.0"):
             with self.subTest(version=ver):
                 selected = smart_patch.select_custom_scheme(ver, ROOT)
                 self.assertTrue(selected.endswith("customScheme.ai-ui.js"), f"Expected ai-ui.js for {ver}, got {selected}")
 
     def test_compat_json_integrity(self):
-        """校验 ai-ui-compat.json 结构、2.28.2、2.32.2 与 2.33.0 签名完整性。"""
+        """校验 ai-ui-compat.json 结构、2.28.2、2.32.2、2.33.0 与 2.34.0 签名完整性。"""
         compat_path = os.path.join(ROOT, "patches", "ai-ui-compat.json")
         with open(compat_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -60,6 +61,10 @@ class TestChameleonSafety(unittest.TestCase):
         v2330 = [b for b in bundles if b.get("antigravityVersion") == "2.33.0"]
         self.assertEqual(len(v2330), 1, "2.33.0 must appear uniquely in supportedBundles")
         self.assertEqual(v2330[0].get("sourceSha256"), SHA256_2330)
+
+        v2340 = [b for b in bundles if b.get("antigravityVersion") == "2.34.0"]
+        self.assertEqual(len(v2340), 1, "2.34.0 must appear uniquely in supportedBundles")
+        self.assertEqual(v2340[0].get("sourceSha256"), SHA256_2340)
 
     def test_chm_no_inject_preserves_high_risk_literals_and_arrays(self):
         """CHM_NO_INJECT=1 模式下必须 100% 保留高危代码字面量、数组与键位映射，并正常翻译纯 UI 属性。"""
