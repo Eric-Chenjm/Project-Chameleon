@@ -1,52 +1,88 @@
-# 🦎 Project Chameleon (变色龙计划)
+# Project Chameleon v3.0 (变色龙计划)
 
-**一句话简介：终极 Antigravity 完美汉化框架。独创「云端神经网热更新」与「本地零功耗嗅探」，解决所有界面乱码与更新白屏死机，实现 100% 极客沉浸式中文体验。**
+**面向 Google Antigravity 2.x–2.34.0+ 的跨版本免疫、双模高性能深度汉化架构。**
 
-> 🔥 **Antigravity 旗舰级无缝跨平台汉化补丁 (跨版本免疫崩溃)**
-[![Antigravity Compatibility](https://img.shields.io/badge/Antigravity-v2.34.0-blue.svg)](https://github.com/Eric-Chenjm/Project-Chameleon)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Mac-blueviolet.svg)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-> [!IMPORTANT]
-> **💻 平台声明**：目前的自动化解包与底层拦截器注入引擎 (`smart_patch.py`) **原生完美支持 Windows 和 Mac 环境**。
-
-## 🌟 为什么需要这个补丁？
-过去，传统的汉化包采用了暴力的**“静态源码替换”**方案。这导致了一个致命问题：官方稍微改动一行代码或者变更一个组件，整个前端页面就会崩溃（所谓的“白屏死机”）。且大量藏在犄角旮旯的动态长句、下拉菜单以及多达 40+ 的动态 Skill 根本无法被匹配。
-
-**Project Chameleon 采用最纯粹的黑客级技术，彻底终结了这一切。**
-
-## 🚀 核心黑科技 (Core Technologies)
-
-经过多次极限重构，变色龙目前已进化为**完全解耦、零功耗、全自动**的终极形态：
-
-1. ⚡ **WeakSet 零功耗渲染 (Zero-Impact DOM Engine)**
-   摒弃传统静态替换，采用底层 `MutationObserver` 结合 `WeakSet` 内存缓存标记算法。渲染引擎拥有了“记忆”，跳过已翻译节点。**翻译效率提升 300%，0 额外 CPU 损耗，绝不掉帧卡顿！**
-2. ☁️ **云端神经网同步 (Cloud Sync Matrix)**
-   彻底废弃了臃肿的 7.5MB 字典包结合体。我们将词典解耦到了极轻量的 `chameleon_dict.json` 中。
-   **这意味着什么？** 未来任何社区新增的插件汉化，变色龙会在后台 Node.js 异步微线程默默从 GitHub 自动拉取更新。**您只需要重启软件，新插件便会自动汉化，再也不需要手动跑任何脚本！**
-3. 📡 **本地私有雷达 (Local Stealth Radar)**
-   如果您在本地写了一个独家的私有全英文 Skill 怎么办？启动软件的瞬间，变色龙原生 `fs.promises` 将执行毫秒级的后台静默探查，自动剥离所有的未知生肉英文，帮您生成待翻译清单。真正的无感全自动化！
-4. 🧩 **极客碎片缝合技术**
-   针对被 HTML 标签一刀切断的长句，使用高级正则动态缝合汉化。并且坚决保留了 `MCP`, `AlphaFold`, `Token`, `Android` 等专业术语的纯正英文形态。
-
-## 📦 如何一键部署？ (保姆级教程)
-
-本项目的目标就是让任何人都能在 10 秒内拥有最纯粹的中文使用体验：
-
-1. **环境准备**：
-   确保您的电脑上已经安装了 [Python](https://www.python.org/)。(Mac 用户请在终端使用 `python3` 命令)。
-2. **下载本项目**：
-   点击右上角的 `Code` -> `Download ZIP` 按钮，或者前往 Release 页面下载最新的发布包。
-3. **执行一键解包注入**：
-   解压后，在终端中运行 `python smart_patch.py`（Windows 用户也可以直接双击运行）。
-   > 脚本会自动检测您的系统环境，提取独立解耦字典，部署底层异步监听器，并无缝重打包。整个过程仅需几秒钟！
-4. **见证奇迹**：
-   打开您的 Antigravity，按下 `Ctrl+R`（Windows）或 `Cmd+R`（Mac）重载界面。恭喜您，进入 100% 完美的中文世界！
-
-## 推广指南：让更多人发现极客的魅力
-如果你喜欢这个项目，欢迎右上角 ⭐️ **Star** 鼓励一下独立开发者！
-如果您希望更多极客发现本项目，建议在 GitHub 网页端的仓库右侧 **About** 的 ⚙️（齿轮图标）中，添加以下推广关键词 (Topics)：
-`antigravity`、`localization`、`chinese-translation`、`electron-patch`、`cross-platform`、`mutation-observer`
+[![Antigravity Compatibility](https://img.shields.io/badge/Antigravity-v2.34.0%2B-blue.svg)](https://github.com/Eric-Chenjm/Project-Chameleon)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blueviolet.svg)](#)
+[![Architecture](https://img.shields.io/badge/Engine-Chameleon%20v3%20Modular-success.svg)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
-*Developed solely by [Eric-Chenjm], engineered for perfection.*
+
+## 一、v3.0 架构重构亮点（彻底告别官方更新全英文 & 崩溃）
+
+经过对社区优秀开源方案的深度吸收与全面底层重构，Chameleon v3.0 彻底废除了“整文件覆盖 `dist/customScheme.js`”和“静态改写 12MB 混淆 `main.js`”的旧路线，重构为**数据解耦、协议零破坏、算力微任务化**的新一代双模架构：
+
+| 模式 | 适用场景 | 核心原理 | 对 `app.asar` 与官方新版本的影响 |
+| :--- | :--- | :--- | :--- |
+| **模式 A：零改包 CDP 动态汉化**（推荐） | 追求跨版本升级免疫、不想改动安装目录 | 通过 `--remote-debugging-port=58321` 与 WebSocket 实时向页面及 `plugin://swarm` 注入 270KB 运行时引擎 | **100% 不碰 `app.asar`**！保留官方完整数字签名，官方更新至未来小版本依然立刻汉化 |
+| **模式 B：ASAR 增量无损补丁** | 习惯直接点桌面原图标启动、希望同步汉化顶部菜单与系统托盘 | 仅在 `dist/preload.js`、`dist/menu.js`、`dist/tray.js`、`dist/main.js`（`plugin://` 子帧）执行标志位截断增量注入 | **保留原生 `dist/customScheme.js` 零改动**（保住 `agy-browser-stream` 等新协议），`--unpack` 隔离体积保持官方原版轻量，支持一键还原 |
+
+---
+
+## 二、核心工程特性
+
+1. **模块化词典资产 (`src/dict/`)**：将 `3,365+` 条纯净、零代码混淆词条拆分为 `common`、`settings`、`chat-agent`、`editor-terminal`、`marketplace`、`plugins-swarm` 6 大领域 JSON，配合 `tools/dict_cli.py` 一键体检（`lint` / `stats` / `find` / `add`）。
+2. **微秒级高性能 DOM 引擎 (`src/runtime/`)**：
+   - 预编译 `O(1)` 大小写不敏感 `Map` 索引 + ASCII 极速短路 + 有界 LRU 字符串缓存；
+   - `queueMicrotask` 微任务并发合并 + DOM 树祖先包含剪枝，消除嵌套递归卡顿；
+   - **叶子 `TextNode` 物理隔离**：绝不修改容器 `.textContent` 或 `INPUT.value` / `TEXTAREA.value`，免疫 React Fiber `removeChild` 崩溃，免疫 Monaco 编辑器、xterm 终端、代码与对话正文。
+3. **右下角悬浮「中/英」实时切换球**：
+   - `WeakMap` 双轨记忆所有节点原文与属性；
+   - **左键单击**：毫秒级中/英文原版无损热切换（无需重启）；
+   - **右键 / 双击菜单**：支持勾选「**专业选项名保留英文**」（保留 `Extra High`、`Turbo`、`Request Review` 等英文对照）或一键整页重扫。
+4. **AI 只读界面巡检 (`tools/live_audit.py`)**：通过 CDP 读取当前窗口中尚未收录的英文控件文本，几秒精准输出增量词条清单，告别盲目扒取 12MB 混淆 Bundle。
+
+---
+
+## 三、快速使用
+
+```bash
+# 方式 1（推荐·零改包 CDP 模式，升级免疫）
+python chameleon.py --cdp
+# Windows 亦可直接双击：一键启动_CDP零改包汉化.bat
+
+# 方式 2（ASAR 增量无损补丁模式，免开调试端口，含原生菜单/托盘）
+# 请先手动完全退出 Antigravity（含系统托盘）
+python chameleon.py --patch
+# Windows 亦可直接双击：一键安装_增量无损补丁.bat
+
+# 查看当前客户端状态与官方协议完整性
+python chameleon.py --status
+
+# 一键还原纯净官方原版
+python chameleon.py --restore
+```
+
+---
+
+## 四、目录结构与开发校验
+
+```text
+├── chameleon.py                  # 统一双模主控制台入口
+├── src/
+│   ├── dict/*.json               # 6 大领域模块化 JSON 词典 (3,365+ 条)
+│   ├── native-menu.json          # Electron 原生顶部菜单与托盘翻译映射
+│   ├── runtime/
+│   │   ├── rules.js              # 动态正则、倒计时、权限目标保护与免疫守卫
+│   │   └── engine.js             # O(1) 引擎、微任务调度、WeakMap 切换与悬浮球
+│   └── patcher/
+│       ├── cdp_injector.py       # 零侵入 CDP 热注入守护模块
+│       └── asar_patcher.py       # 标志截断式 ASAR 增量注入与纯净还原模块
+├── tools/
+│   ├── build_overlay.py          # 编译与 Node 语法验证 dist/chameleon-overlay.js
+│   ├── dict_cli.py               # 词典增删查与自动化 Lint 体检门禁
+│   └── live_audit.py             # 运行时可见英文差异巡检工具
+└── tests/
+    ├── engine.test.mjs           # Node.js 运行时规则、权限保护与沙箱编译测试
+    └── test_v3_patcher.py        # 增量补丁幂等性、可逆性、语法与零强杀测试
+```
+
+运行全套自检与自动化测试：
+
+```bash
+python tools/dict_cli.py lint
+python tools/build_overlay.py --check
+node --test tests/engine.test.mjs
+python -m unittest discover -s tests -p "test_*.py" -v
+```

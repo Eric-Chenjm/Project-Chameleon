@@ -425,10 +425,9 @@ console.log('DOM_ENGINE_OK');
         import glob
 
         expected_bats = {
-            "一键激活汉化_2300.bat",
-            "一键激活汉化_2310.bat",
-            "一键激活汉化_2312.bat",
-            "一键激活汉化_2330.bat",
+            "一键启动_CDP零改包汉化.bat",
+            "一键安装_增量无损补丁.bat",
+            "一键还原_官方原版.bat",
         }
         bat_paths = sorted(glob.glob(os.path.join(ROOT, "*.bat")))
         found_names = {os.path.basename(p) for p in bat_paths}

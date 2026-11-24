@@ -316,21 +316,38 @@ def patch_install(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Project Chameleon 纯净汉化注入器")
+    parser = argparse.ArgumentParser(description="Project Chameleon 纯净汉化注入器 (默认已自动路由至 v3.0 增量无损引擎)")
     parser.add_argument("--resources-dir", default=None, help="覆盖 Antigravity resources 目录路径")
     parser.add_argument("--appdata-dir", default=None, help="覆盖 Antigravity 用户数据目录路径")
     parser.add_argument("--base-dir", default=None, help="覆盖补丁与翻译包根目录路径")
     parser.add_argument("--dry-run", action="store_true", help="仅执行只读检查与方案预览，不修改文件")
     parser.add_argument("--skip-process-check", action="store_true", help="跳过 Antigravity 运行进程检测")
+    parser.add_argument("--legacy-v2", action="store_true", help="强制使用旧版 v2 customScheme 重定向引擎 (仅作历史兼容)")
     args = parser.parse_args()
 
-    patch_install(
+    if args.legacy_v2:
+        patch_install(
+            resources_dir=args.resources_dir,
+            appdata_dir=args.appdata_dir,
+            base_dir=args.base_dir,
+            dry_run=args.dry_run,
+            skip_process_check=args.skip_process_check,
+        )
+        return
+
+    import chameleon
+    from src.patcher.asar_patcher import apply_incremental_patch
+
+    overlay_js, _, _ = chameleon.ensure_built_overlay()
+    ok = apply_incremental_patch(
+        overlay_js=overlay_js,
+        native_map=chameleon.load_native_map(),
         resources_dir=args.resources_dir,
-        appdata_dir=args.appdata_dir,
-        base_dir=args.base_dir,
         dry_run=args.dry_run,
         skip_process_check=args.skip_process_check,
     )
+    if not ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
